@@ -108,7 +108,7 @@ def get_list_with_attrs(letterboxd_list_url: str,
   
                     film = LetterboxdFilm(url)
 
-                    title = film.title.replace(",", "")   # to not mess up the CSV file
+                    title = "\"" + film.title + "\""            # sanitizing
                     file_row = title+","+film.year
 
 
