@@ -178,10 +178,10 @@ def get_list_with_attrs(letterboxd_list_url: str,
 
 # so the argparser will play nice with -h
 def defaultOutputFile():
-    if (len(argv) > 2): 
+    if (len(argv) == 3):
         return argv[2].split("/")[-2]+".csv"   # use the list name in URL .csv
     else: 
-        return ""
+        return argv[-1]
 
 
 def parse_CLI_args():
@@ -218,7 +218,7 @@ def main():
 
     get_list_with_attrs(cli_args['list_url'][0],    # sends first argument as a list
                         cli_args['attributes'],
-                        cli_args['output_file'][0])
+                        cli_args['output_file'])
 
     print("\n\nRetrival complete!\n")
 
