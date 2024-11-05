@@ -215,10 +215,10 @@ def parse_CLI_args():
 
 def main():
     cli_args = parse_CLI_args()
-
+    print(cli_args)
     get_list_with_attrs(cli_args['list_url'][0],    # sends first argument as a list
                         cli_args['attributes'],
-                        cli_args['output_file'])
+                        cli_args['output_file'][0])
 
     print("\n\nRetrival complete!\n")
 
