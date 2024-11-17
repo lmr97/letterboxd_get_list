@@ -4,18 +4,12 @@ This repo has a CLI program that can convert any Letterboxd list into a CSV file
 
 ## Installation
 
-First, you will need to install two dependencies:
+First, you will need to install two dependencies in the environment of your choice:
 
-The python's `requests` module...
-
-```
-pip install requests
-```
-
-..and an HTML parser with CSS selection called [`selectolax`](https://github.com/rushter/selectolax) (it's significantly faster than BeautifulSoup):
+The python's `requests` module, and an HTML parser with CSS selection called [`selectolax`](https://github.com/rushter/selectolax) (it's significantly faster than BeautifulSoup):
 
 ```
-pip install selectolax
+pip install requests selectolax
 ```
 
 Then simply clone the repository to your desired directory, and switch to the cloned directory, and it's ready to run.
@@ -23,6 +17,24 @@ Then simply clone the repository to your desired directory, and switch to the cl
 ```
 git clone https//github.com/lmr97/letterboxd_get_list
 cd letterboxd_get_list
+```
+
+### Docker container
+
+There is a GitHub Package for this repo called `letterboxd_get_list` which runs out of a Docker container (linked in the Packages section in the sidebar). You can pull the image with the command below, or build it yourself with the Dockerfile included here. 
+
+```
+docker pull ghcr.io/lmr97/letterboxd_get_list:latest
+```
+
+For easy retrieval of output files, I would recommend binding a folder to the container when you run it, like so:
+
+```
+mkdir OutputFiles                        # optional
+docker run -d \
+    --name get-lb-list \
+    -v "${pwd}"/OutpuFiles:/home/runner/OutputFiles
+    letterboxd_get_list:latest
 ```
 
 ## `get_list.py` CLI usage
