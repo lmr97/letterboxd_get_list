@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "letterboxd-get-list"
+version = "0.5.0"
+description = "Gets and formats a given list from Letterboxd.com, with specified film attributes."
+package-mode = false
+authors = ["lmr97 <lmreid1997@gmail.com>"]
+readme = "README.md"
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "2.32.3"
+pycurl = "7.45.4"
+selectolax = "0.3.27"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
