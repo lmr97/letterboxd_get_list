@@ -5,7 +5,7 @@ from shutil import get_terminal_size
 from math import ceil
 from argparse import ArgumentParser
 from fnmatch import filter
-from requests import Session
+from pycurl import Curl
 from LetterboxdFilm import LetterboxdFilm
 from selectolax.parser import HTMLParser
     
@@ -72,108 +72,110 @@ def get_list_with_attrs(letterboxd_list_url: str,
     
     list_file = []
     unretrieved_attrs = []
-    user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 
-    with Session() as s:
-        s.headers['User-Agent'] = user_agent
+    curl = Curl()
+    curl.setopt(curl.HTTPHEADER, ["User-Agent: Application"])
 
-        with open(output_file, "w") as lbfile_writer:
+    with open(output_file, "w") as lbfile_writer:
+        
+        num_pages = 1  # update this value later
+        current_page = 1
+        listwide_vars_updated = False
+        list_is_ranked = False
+        list_rank = 1
+        while(True):
             
-            num_pages = 1  # update this value later
-            current_page = 1
-            listwide_vars_updated = False
-            list_is_ranked = False
-            list_rank = 1
-            while(True):
+            curl.setopt(curl.URL, letterboxd_list_url+"page/"+str(current_page)+"/")
+            listpage = curl.perform_rs()
+            tree = HTMLParser(listpage)
+            film_urls = ["https://letterboxd.com" + el.attrs['data-target-link']  for el in tree.css("div[data-target-link^='/film/']")]
+
+            # placed in if statement so it the CSS searches don't run every iteration
+            if (not listwide_vars_updated):
+                page_num_nodes = tree.css("li.paginate-page")
+                list_num_nodes = tree.css("p.list-number")
                 
-                listpage = s.get(letterboxd_list_url+"page/"+str(current_page)+"/")
-                tree = HTMLParser(listpage.text)
-                film_urls = ["https://letterboxd.com" + el.attrs['data-target-link']  for el in tree.css("div[data-target-link^='/film/']")]
-
-                # placed in if statement so it the CSS searches don't run every iteration
-                if (not listwide_vars_updated):
-                    page_num_nodes = tree.css("li.paginate-page")
-                    list_num_nodes = tree.css("p.list-number")
+                if (page_num_nodes): 
+                    num_pages = int(page_num_nodes[-1].text())
                     
-                    if (page_num_nodes): 
-                        num_pages = int(page_num_nodes[-1].text())
-                     
-                    if (list_num_nodes):
-                        list_is_ranked = True
+                if (list_num_nodes):
+                    list_is_ranked = True
+                
+                listwide_vars_updated = True
+
+
+            for url in film_urls:
+
+                film = LetterboxdFilm(url)
+
+                title = "\"" + film.title + "\""            # sanitizing
+                file_row = title+","+film.year
+
+
+                for attr in attrs:
+
+                    # look through dictionary of method names for attr...
+                    matches = filter(vars(LetterboxdFilm).keys(), "*"+attr)
                     
-                    listwide_vars_updated = True
+                    # ...and call the method associated with the given attr
+                    if (matches): 
+                        found_attr = vars(LetterboxdFilm)[matches[0]](film)
+                    
 
-
-                for url in film_urls:
-  
-                    film = LetterboxdFilm(url)
-
-                    title = "\"" + film.title + "\""            # sanitizing
-                    file_row = title+","+film.year
-
-
-                    for attr in attrs:
-
-                        # look through dictionary of method names for attr...
-                        matches = filter(vars(LetterboxdFilm).keys(), "*"+attr)
-                        
-                        # ...and call the method associated with the given attr
-                        if (matches): 
-                            found_attr = vars(LetterboxdFilm)[matches[0]](film)
-                        
-
-                        # if it's not there, it could be a tabbed attribute, so try that
-                        else:
-                            try:
-                                found_attr = film.get_tabbed_attribute(attr)
-                            
-                            # keep track of unfound attrs, for header construction
-                            except (ValueError):
-                                unretrieved_attrs.append(attr)
-                                pass
-                        
-                        # convert list or dict to CSV-friendly format
-                        if (   type(found_attr) == list
-                            or type(found_attr) == dict):
-                            
-                            found_attr = str(found_attr)
-                            found_attr = found_attr[2:-2]               # take off brackets
-                            found_attr = found_attr.replace("\'", "")   # take out quote marks
-                            found_attr = found_attr.replace(",", ";")   # separate list/dict elements by ";", not ","
-
-                            file_row  += "," + found_attr
-                        else:
-                            file_row  += "," + str(found_attr)
-
-                    if (list_is_ranked): 
-                        file_row = str(list_rank) + "," + file_row
-                        list_rank += 1
-
-                    file_row += "\n"
-                    list_file.append(file_row)
-
-                    # make sure loading bar has the correct denominator
-                    if (len(film_urls) < 100):
-                        print_loading_bar(len(list_file), 100*num_pages - (100-len(film_urls)))
+                    # if it's not there, it could be a tabbed attribute, so try that
                     else:
-                        print_loading_bar(len(list_file), len(film_urls)*num_pages)
+                        try:
+                            found_attr = film.get_tabbed_attribute(attr)
+                        
+                        # keep track of unfound attrs, for header construction
+                        except (ValueError):
+                            unretrieved_attrs.append(attr)
+                            pass
+                    
+                    # convert list or dict to CSV-friendly format
+                    if   (type(found_attr) == list):
+                        
+                        found_attr = "; ".join(found_attr)  # separate list elements by ";", not "," 
+                        file_row  += "," + found_attr
+
+                    elif (type(found_attr) == dict):
+
+                        found_attr = [f"{key}: {value}" for (key, value) in found_attr.items()]
+                        found_attr = "; ".join(found_attr)
+                        file_row  += "," + found_attr
+
+                    else:
+                        file_row  += "," + str(found_attr)
+
+                if (list_is_ranked): 
+                    file_row = str(list_rank) + "," + file_row
+                    list_rank += 1
+
+                file_row += "\n"
+                list_file.append(file_row)
+
+                # make sure loading bar has the correct denominator
+                if (len(film_urls) < 100):
+                    print_loading_bar(len(list_file), 100*num_pages - (100-len(film_urls)))
+                else:
+                    print_loading_bar(len(list_file), len(film_urls)*num_pages)
 
 
-                if (current_page == num_pages): break
-                current_page += 1
-            
+            if (current_page == num_pages): break
+            current_page += 1
+        
 
-            # finalize header
-            header = "Title,Year"
-            for attr in attrs:
-                if (attr not in unretrieved_attrs):
-                    header += "," + attr.capitalize()
-            
-            if (list_is_ranked): header = "Rank," + header
+        # finalize header
+        header = "Title,Year"
+        for attr in attrs:
+            if (attr not in unretrieved_attrs):
+                header += "," + attr.capitalize()
+        
+        if (list_is_ranked): header = "Rank," + header
 
-            header += "\n"
-            list_file.insert(0, header)
-            lbfile_writer.writelines(list_file)
+        header += "\n"
+        list_file.insert(0, header)
+        lbfile_writer.writelines(list_file)
 
 
 # so the argparser will play nice with -h
@@ -187,7 +189,7 @@ def defaultOutputFile():
 def parse_CLI_args():
     arg_parser = ArgumentParser(description="Collects requested film attributes from a given Letterboxd list, and puts it in a CSV file (title and year are automatically included, and rank if list is ranked)")
 
-    arg_parser.add_argument('-l','--list-url', 
+    arg_parser.add_argument('-u','--list-url', 
                             nargs=1, 
                             type=str, 
                             required=True, 
@@ -215,7 +217,7 @@ def parse_CLI_args():
 
 def main():
     cli_args = parse_CLI_args()
-    print(cli_args)
+
     get_list_with_attrs(cli_args['list_url'][0],    # sends first argument as a list
                         cli_args['attributes'],
                         cli_args['output_file'][0])

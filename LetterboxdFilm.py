@@ -1,4 +1,4 @@
-from requests import Session
+from pycurl import Curl
 from selectolax.parser import HTMLParser
 
 TABBED_ATTRS = ["actor",
@@ -55,28 +55,42 @@ class LetterboxdFilm:
     """
     def __init__(self, film_url: str):
         
-        insert_index = film_url.find("/film")
-        stats_url = film_url[:insert_index] + "/csi" + film_url[insert_index:] + "stats/"
+        self._url       = film_url
+        insert_index    = film_url.find("/film")
+        stats_url       = film_url[:insert_index] + "/csi" + film_url[insert_index:] + "stats/"
         self._stats_url = stats_url
 
-        with Session() as s:
-            page_response = s.get(film_url)
+        self.curl       = Curl()
+        self.curl.setopt(self.curl.HTTPHEADER, ["User-Agent: Application"])
+        self.curl.setopt(self.curl.URL, film_url)
 
-            try: assert(page_response.status_code == 200)
-            except AssertionError:
-                print(f"\nInvalid URL: {film_url}\n")
-                exit()  
+        resp_str        = self.curl.perform_rs()
+        status_code     = self.curl.getinfo(self.curl.RESPONSE_CODE)
 
-            self._url = film_url
-            page_html = HTMLParser(page_response.text)
+        try: 
+            assert(status_code == 200)
+        except AssertionError:
+            # if a 3xx error
+            if (status_code >= 400 and status_code < 500):
+                print(f"\nInvalid URL: {film_url}")
+                print(f"Status code: {status_code}\n")
+            elif (status_code >= 500):
+                print("Letterboxd server issue. Try again later.")
+                print(f"Status code: {status_code}\n")
+            else:
+                print(f"Unusual response from server; status code: {status_code}\n")
+            
+            exit()  
 
-            stats_response = s.get(stats_url)
-            stats_html = HTMLParser(stats_response.text)
+        
+        page_html        = HTMLParser(resp_str)
+        self._html       = page_html
+        self._title      = page_html.css("span.js-widont")[0].text()
+        self._year       = page_html.css("a[href^='/films/year/']")[0].text()
 
-        self._html  = page_html
-        self._title = page_html.css("span.js-widont")[0].text()
-        self._year  = page_html.css("a[href^='/films/year/']")[0].text()
-        self._stats_html = stats_html
+        # initialize on first time used
+        self._stats_html = None 
+        
 
 
     @property
@@ -109,7 +123,7 @@ class LetterboxdFilm:
         printed after a ValueError is raised if the attribute is not valid.
         
         Always use the full, singular form of the attribute you'd like, and replace each space
-        with a `-` (ASCII 45). 
+        with a hyphen, `-` (ASCII 45). 
 
         See example below:
 
@@ -138,7 +152,7 @@ class LetterboxdFilm:
 
         # extract text from found HTML elements
         attribute_list = [e.text() for e in elements]
-        
+
         # return only distinct values, but still as a list
         if (attribute_list): return list(set(attribute_list))
 
@@ -151,6 +165,7 @@ class LetterboxdFilm:
         For many films, there are multiple directors (e.g. The Matrix (1999)), 
         so this method always returns a list.
         """
+    
         return self.get_tabbed_attribute("director")
     
     def get_genres(self) -> list:
@@ -198,7 +213,19 @@ class LetterboxdFilm:
 
         return casting
     
+
+    # Statistics section
+
+    def _get_stats_html(self):
+        self.curl.setopt(self.curl.URL, self._stats_url)
+        stats_response   = self.curl.perform_rs()
+        stats_html       = HTMLParser(stats_response)
+        self._stats_html = stats_html
+
     def get_watches(self) -> int:
+        if (not self._stats_html):
+            self._get_stats_html()
+
         watches_msg = self._stats_html.css("a.icon-watched")[0].attrs['title']
         watches_msg = watches_msg[11:]                       # take out the "Watched by"
         watches_msg = watches_msg[:-8]                       # take out the " members"
@@ -207,6 +234,9 @@ class LetterboxdFilm:
         return view_count
     
     def get_likes(self) -> int:
+        if (not self._stats_html):
+            self._get_stats_html()
+
         likes_msg = self._stats_html.css("a.icon-liked")[0].attrs['title']
         likes_msg = likes_msg[9:]                          # take out the "Liked by"
         likes_msg = likes_msg[:-8]                         # take out the " members"
