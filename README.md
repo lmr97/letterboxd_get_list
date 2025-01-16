@@ -4,19 +4,23 @@ This repo has a CLI program that can convert any Letterboxd list into a CSV file
 
 ## Installation
 
-First, you will need to install two dependencies in the environment of your choice:
-
-The python's `requests` module, and an HTML parser with CSS selection called [`selectolax`](https://github.com/rushter/selectolax) (it's significantly faster than BeautifulSoup):
-
-```
-pip install requests selectolax
-```
-
-Then simply clone the repository to your desired directory, and switch to the cloned directory, and it's ready to run.
+Clone the respoitory:
 
 ```
 git clone https//github.com/lmr97/letterboxd_get_list
 cd letterboxd_get_list
+```
+
+Then install dependencies with Poetry:
+
+```
+poetry install
+```
+
+Then run with Poetry. For example:
+
+```
+poetry run python get_list.py --list-url https://letterboxd.com/crew/list/2024-highest-rated-films/ --attributes director watches avg_rating --output-file 2024-highest-rated.csv
 ```
 
 ### Docker container
@@ -40,9 +44,9 @@ docker run -d \
 ## `get_list.py` CLI usage
 
 ```
-get_list.py [-h] --list-url LIST_URL
-                [--attributes [{VALID_ATTRIBUTE} ...]]
-                [--output-file [OUTPUT_FILE]]
+get_list.py [-h] -u, --list-url LIST_URL
+                [-a, --attributes VALID_ATTRIBUTE [...]]
+                [-o, --output-file OUTPUT_FILE]
 ```
 
 Abbreviated options are accepted as well. In a bit more detail:
@@ -50,7 +54,7 @@ Abbreviated options are accepted as well. In a bit more detail:
 Option | Descriptions
 ------------ | ---------------
 `--help`, `-h` | Print usage and help.
-`--list-url`, `-l`| **(Required)** The URL for the list on Letterboxd you'd like to convert to a CSV file.
+`--list-url`, `-u`| **(Required)** The URL for the list on Letterboxd you'd like to convert to a CSV file.
 `--attributes`, `-a` | **(Optional)** A series 1 or more of kinds of information about each film you would like included in the output, from the list of valid attributes below. 
 `--output-file`, `-o` | **(Optional)** A path/file to place the output. If none is given, this option will default to a filename will default to the last part of the URL, with `.csv` at the end, placed in the working directory (e.g. for `https://letterboxd.com/user/list/name-of-list/`, the file name would be `name-of-list.csv`).
 
@@ -102,12 +106,6 @@ Additional notes about output formatting:
 * For films where a given attribute is not found on the page, the program writes "Not listed" in that cell (it does not crash).
 * If an attribute has multiple values to it (e.g. the film has 3 directors), each element in that attribute will be separated by a `;`. In the case of casting, the key-value pairs (see `get_casting()` heading below) will be separated by a semicolon as well, with the key separated from the value by a colon as is convention.
 * For films that have a comma in the title, the comma is removed so as to not mess up the CSV file. 
-
-Here's an example of how to use the CLI:
-
-```
-$ python3 get_list.py --list-url https://letterboxd.com/dave/list/official-top-250-narrative-feature-films/ --attributes director watches avg_rating --output-file lb_top_250.csv
-```
 
 A loading bar will display to show the progress, and once the program has written to the output file, it will print `Retrieval complete!` and terminate. The first few lines of the CSV that results from the above command is shown below:
 
