@@ -37,7 +37,7 @@ For easy retrieval of output files, I would recommend binding a folder to the co
 mkdir OutputFiles                        # optional
 docker run -d \
     --name get-lb-list \
-    -v "${pwd}"/OutpuFiles:/home/runner/OutputFiles
+    -v "${pwd}"/OutputFiles:/home/runner/OutputFiles
     letterboxd_get_list:latest
 ```
 
