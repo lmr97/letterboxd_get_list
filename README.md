@@ -2,6 +2,8 @@
 
 This repo has a CLI program that can convert any Letterboxd list into a CSV file, and get any desired information for each film in the list (title and year are added by default). It also has a `LetterboxdFilm` class definition (upon which `get_list.py` depends), which allows for quick access to film information off Letterboxd given the URL to the film.
 
+**Please note: this program will take a while for long lists.** This is because it has to make 1-2 GET requests for each film, and one for each page of the list. Since I have no API access for Letterboxd, I cannot do it any other way, so I have done my best to optimize what I have. But on the other hand, you do have a progress bar available to show you how long you have to wait.
+
 ## Installation
 
 Clone the respoitory:
@@ -94,7 +96,6 @@ The valid attribute arguments are as follows:
 * sound
 * special-effects
 * special-effects
-* story
 * studio
 * stunts
 * theme
