@@ -37,10 +37,10 @@ docker pull ghcr.io/lmr97/letterboxd_get_list:latest
 For easy retrieval of output files, I would recommend binding a folder to the container when you run it, like so:
 
 ```
-mkdir OutputFiles                        # optional
+mkdir OutputFiles 
 docker run -d \
     --name get-lb-list \
-    -v "${pwd}"/OutpuFiles:/home/runner/OutputFiles
+    -v "${pwd}"/OutputFiles:/home/runner/OutputFiles
     letterboxd_get_list:latest
 ```
 
