@@ -23,7 +23,7 @@ Then run with Poetry. For example:
 poetry run python get_list.py \
     --list-url https://letterboxd.com/lanadelmill/list/best-of-bizarre/ \
     --attributes director watches avg_rating \
-    --output-file 2024-highest-rated.csv
+    --output-file best-of-bizarre.csv
 ```
 
 ### Docker container
@@ -113,12 +113,11 @@ Additional notes about output formatting:
 A loading bar will display to show the progress, and once the program has written to the output file, it will print `Retrieval complete!` and terminate. The first few lines of the CSV that results from the above command is shown below:
 
 ```
-Rank,Title,Year,Director,Watches,Avg_rating
-1,Harakiri,1962,Masaki Kobayashi,143603,4.69
-2,Come and See,1985,Elem Klimov,320234,4.64
-3,12 Angry Men,1957,Sidney Lumet,959305,4.62
-4,Seven Samurai,1954,Akira Kurosawa,370612,4.6
-5,The Godfather: Part II,1974,Francis Ford Coppola,1127168,4.59
+Title,Year,Director,Watches,Avg_rating
+"The Lobster",2015,Yorgos Lanthimos,1282084,3.77
+"Swallow",2019,Carlo Mirabella-Davis,160521,3.42
+"Butt Boy",2019,Tyler Cornack,7735,3.02
+"Greener Grass",2019,Jocelyn DeBoer; Dawn Luebbe,62082,3.56
 ...
 ```
 
@@ -131,7 +130,7 @@ This class takes care of all the requesting and parsing of HTML files for a give
 * Film page URL
 * Film page HTML
 
-These attributes are all `str`s. Any other information of the film comes through class methods that query the HTML via CSS selectors, a kind of lazy evaluation to save initalization time and storage space. I intended it to be quite intuitive, but I feel the methods below warant further description:
+These attributes are all `str`s. Any other information of the film comes through class methods that query the HTML via CSS selectors, a kind of lazy evaluation to save initalization time and storage space. I intended it to be as intuitive as possible, but I feel the methods below warant further description:
 
 ### `get_tabbed_attribute(attribute)`
 
