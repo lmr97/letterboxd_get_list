@@ -13,5 +13,5 @@ COPY ./get_list.py ./
 COPY ./LetterboxdFilm.py ./
 
 RUN python3 -m venv .venv
-RUN ./.venv/bin/pip install requests==2.32.3
+RUN ./.venv/bin/pip install pycurl==7.45.4
 RUN ./.venv/bin/pip install selectolax==0.3.21
