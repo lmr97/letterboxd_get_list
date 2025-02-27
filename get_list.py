@@ -3,10 +3,10 @@
 from sys import argv
 from shutil import get_terminal_size
 from math import ceil
+from datetime import datetime
 from argparse import ArgumentParser
-from fnmatch import filter
 from pycurl import Curl
-from LetterboxdFilm import LetterboxdFilm
+from LetterboxdFilm import LetterboxdFilm, TABBED_ATTRS
 from selectolax.parser import HTMLParser
     
 
@@ -42,7 +42,6 @@ VALID_ATTRS  = ["actor",
                 "sound",
                 "special-effects",
                 "special-effects",
-                "story",
                 "studio",
                 "stunts",
                 "theme",
@@ -52,14 +51,20 @@ VALID_ATTRS  = ["actor",
                 "writer"
                 ]
 
-def print_loading_bar(rows_now, total_rows):
-    output_width = get_terminal_size(fallback=(80,25))[0]-11    # runs every call to adjust as terminal changes
+def print_progress_bar(rows_now: int, total_rows: int, func_start_time: datetime):
+    output_width  = get_terminal_size(fallback=(80,25))[0]-30    # runs every call to adjust as terminal changes
+    completion    = rows_now/total_rows
+    bar_width_now = ceil(output_width * completion)
 
-    bar_width_now = ceil(output_width * (rows_now)/total_rows)
+    since_start   = datetime.now() - func_start_time
+    est_remaining = since_start * (total_rows/rows_now - 1)
+    minutes       = int(est_remaining.total_seconds()) // 60
+    seconds       = est_remaining.seconds 
 
     print("| ", "█" * bar_width_now, 
             (output_width - bar_width_now) * " ", "|", 
-            f"{(rows_now)/total_rows:.0%}",
+            f"{completion:.0%}  ",
+            f"Remaining: {minutes:02d}:{seconds:02d}",
             end = "\r")
 
 
@@ -74,7 +79,9 @@ def get_list_with_attrs(letterboxd_list_url: str,
     unretrieved_attrs = []
 
     curl = Curl()
-    curl.setopt(curl.HTTPHEADER, ["User-Agent: Application"])
+    curl.setopt(curl.HTTPHEADER, ["User-Agent: Application", "Connection: Keep-Alive"])
+
+    start_time = datetime.now()     # to use for estimation of time remaining in print_progress_bar()
 
     with open(output_file, "w") as lbfile_writer:
         
@@ -83,6 +90,9 @@ def get_list_with_attrs(letterboxd_list_url: str,
         listwide_vars_updated = False
         list_is_ranked = False
         list_rank = 1
+
+        # running this as an infinite loop that breaks later
+        # because the number of total pages to search is not known
         while(True):
             
             curl.setopt(curl.URL, letterboxd_list_url+"page/"+str(current_page)+"/")
@@ -90,7 +100,7 @@ def get_list_with_attrs(letterboxd_list_url: str,
             tree = HTMLParser(listpage)
             film_urls = ["https://letterboxd.com" + el.attrs['data-target-link']  for el in tree.css("div[data-target-link^='/film/']")]
 
-            # placed in if statement so it the CSS searches don't run every iteration
+            # placed in if statement so the searches don't run every iteration
             if (not listwide_vars_updated):
                 page_num_nodes = tree.css("li.paginate-page")
                 list_num_nodes = tree.css("p.list-number")
@@ -103,10 +113,9 @@ def get_list_with_attrs(letterboxd_list_url: str,
                 
                 listwide_vars_updated = True
 
-
             for url in film_urls:
 
-                film = LetterboxdFilm(url)
+                film = LetterboxdFilm(url, curl)
 
                 title = "\"" + film.title + "\""            # sanitizing
                 file_row = title+","+film.year
@@ -114,23 +123,16 @@ def get_list_with_attrs(letterboxd_list_url: str,
 
                 for attr in attrs:
 
-                    # look through dictionary of method names for attr...
-                    matches = filter(vars(LetterboxdFilm).keys(), "*"+attr)
-                    
-                    # ...and call the method associated with the given attr
-                    if (matches): 
-                        found_attr = vars(LetterboxdFilm)[matches[0]](film)
-                    
-
-                    # if it's not there, it could be a tabbed attribute, so try that
+                    found_attr = "(not found)"              # default
+                    if   (attr in TABBED_ATTRS):
+                        found_attr = film.get_tabbed_attribute(attr)
                     else:
-                        try:
-                            found_attr = film.get_tabbed_attribute(attr)
-                        
-                        # keep track of unfound attrs, for header construction
-                        except (ValueError):
-                            unretrieved_attrs.append(attr)
-                            pass
+                        match attr:
+                            case "avg_rating":  found_attr = film.get_avg_rating()
+                            case "casting":     found_attr = film.get_casting()
+                            case "likes":       found_attr = film.get_likes()
+                            case "watches":     found_attr = film.get_watches()
+                            
                     
                     # convert list or dict to CSV-friendly format
                     if   (type(found_attr) == list):
@@ -156,9 +158,9 @@ def get_list_with_attrs(letterboxd_list_url: str,
 
                 # make sure loading bar has the correct denominator
                 if (len(film_urls) < 100):
-                    print_loading_bar(len(list_file), 100*num_pages - (100-len(film_urls)))
+                    print_progress_bar(len(list_file), 100*num_pages - (100-len(film_urls)), start_time)
                 else:
-                    print_loading_bar(len(list_file), len(film_urls)*num_pages)
+                    print_progress_bar(len(list_file), len(film_urls)*num_pages, start_time)
 
 
             if (current_page == num_pages): break
@@ -222,7 +224,7 @@ def main():
                         cli_args['attributes'],
                         cli_args['output_file'][0])
 
-    print("\n\nRetrival complete!\n")
+    print("\n\n\033[0;32mRetrival complete!\033[0m\n")
 
 
 

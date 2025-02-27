@@ -29,7 +29,6 @@ TABBED_ATTRS = ["actor",
                 "sound",
                 "special-effects",
                 "special-effects",
-                "story",
                 "studio",
                 "stunts",
                 "theme",
@@ -52,16 +51,22 @@ class LetterboxdFilm:
 
     Any other film information is accessed through CSS-based searches on the HTML, implemented
     as class methods.
+
+    It also takes an optional argument, `curl_session`, to use an existing PyCurl object.
     """
-    def __init__(self, film_url: str):
+    def __init__(self, film_url: str, curl_session=None):
         
         self._url       = film_url
         insert_index    = film_url.find("/film")
         stats_url       = film_url[:insert_index] + "/csi" + film_url[insert_index:] + "stats/"
         self._stats_url = stats_url
 
-        self.curl       = Curl()
-        self.curl.setopt(self.curl.HTTPHEADER, ["User-Agent: Application"])
+        if (curl_session == None):
+            self.curl   = Curl()
+            self.curl.setopt(self.curl.HTTPHEADER, ["User-Agent: Application"])
+        else:
+            self.curl   = curl_session
+        
         self.curl.setopt(self.curl.URL, film_url)
 
         resp_str        = self.curl.perform_rs()
@@ -162,7 +167,7 @@ class LetterboxdFilm:
     
     def get_directors(self) -> list:
         """
-        For many films, there are multiple directors (e.g. The Matrix (1999)), 
+        For some films, there are multiple directors (e.g. The Matrix (1999)), 
         so this method always returns a list.
         """
     
