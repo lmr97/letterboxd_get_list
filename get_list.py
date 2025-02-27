@@ -52,19 +52,19 @@ VALID_ATTRS  = ["actor",
                 ]
 
 def print_progress_bar(rows_now: int, total_rows: int, func_start_time: datetime):
-    output_width  = get_terminal_size(fallback=(80,25))[0]-30    # runs every call to adjust as terminal changes
+    output_width  = get_terminal_size(fallback=(80,25))[0]-37    # runs every call to adjust as terminal changes
     completion    = rows_now/total_rows
     bar_width_now = ceil(output_width * completion)
 
     since_start   = datetime.now() - func_start_time
     est_remaining = since_start * (total_rows/rows_now - 1)
     minutes       = int(est_remaining.total_seconds()) // 60
-    seconds       = est_remaining.seconds 
+    seconds       = est_remaining.seconds % 60                   # `seconds` attribute can have value > 60
 
     print("| ", "█" * bar_width_now, 
             (output_width - bar_width_now) * " ", "|", 
             f"{completion:.0%}  ",
-            f"Remaining: {minutes:02d}:{seconds:02d}",
+            f"Time remaining: {minutes:02d}:{seconds:02d}",
             end = "\r")
 
 
@@ -84,42 +84,33 @@ def get_list_with_attrs(letterboxd_list_url: str,
     start_time = datetime.now()     # to use for estimation of time remaining in print_progress_bar()
 
     with open(output_file, "w") as lbfile_writer:
-        
-        num_pages = 1  # update this value later
-        current_page = 1
-        listwide_vars_updated = False
-        list_is_ranked = False
-        list_rank = 1
 
-        # running this as an infinite loop that breaks later
-        # because the number of total pages to search is not known
-        while(True):
+        # get number of pages
+        curl.setopt(curl.URL, letterboxd_list_url)
+        listpage       = curl.perform_rs()
+        tree           = HTMLParser(listpage)
+        page_num_nodes = tree.css("li.paginate-page")           # finds all page number nodes
+        num_pages      = max(1, len(page_num_nodes))            # guarantee num_pages is at least 1
+        list_is_ranked = bool(tree.css("p.list-number"))        # casts empty list of rank number nodes to False
+        list_rank      = 1                                      # defining if needed
+
+        for current_page in range(1, num_pages+1):              # start at 1, and include num_pages in iteration
             
-            curl.setopt(curl.URL, letterboxd_list_url+"page/"+str(current_page)+"/")
-            listpage = curl.perform_rs()
-            tree = HTMLParser(listpage)
-            film_urls = ["https://letterboxd.com" + el.attrs['data-target-link']  for el in tree.css("div[data-target-link^='/film/']")]
+            # use HTML from the GET that helps initialize page_num, 
+            # if on first iteration
+            if (current_page > 1):
+                curl.setopt(curl.URL, letterboxd_list_url+"page/"+str(current_page)+"/")
+                listpage = curl.perform_rs()
+                tree = HTMLParser(listpage)
 
-            # placed in if statement so the searches don't run every iteration
-            if (not listwide_vars_updated):
-                page_num_nodes = tree.css("li.paginate-page")
-                list_num_nodes = tree.css("p.list-number")
-                
-                if (page_num_nodes): 
-                    num_pages = int(page_num_nodes[-1].text())
-                    
-                if (list_num_nodes):
-                    list_is_ranked = True
-                
-                listwide_vars_updated = True
+            film_urls = ["https://letterboxd.com" + el.attrs['data-target-link']  for el in tree.css("div[data-target-link^='/film/']")]
 
             for url in film_urls:
 
                 film = LetterboxdFilm(url, curl)
 
-                title = "\"" + film.title + "\""            # sanitizing
+                title = "\"" + film.title + "\""            # rudimentary sanitizing
                 file_row = title+","+film.year
-
 
                 for attr in attrs:
 
