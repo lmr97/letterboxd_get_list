@@ -1,17 +1,12 @@
-FROM ubuntu:24.04
+# largely just copied from Python's official Docker image page
+FROM python:3.13
 
-RUN apt-get update
-RUN apt-get -y install python3.12
-RUN apt-get -y install python3-pip
-RUN apt-get -y install python3.12-venv
+WORKDIR /usr/src/app
 
-RUN useradd runner
-USER runner
+COPY requirements.txt  ./
+COPY get_list.py       ./
+COPY LetterboxdFilm.py ./
 
-WORKDIR /usr/local/runner
-COPY ./get_list.py ./
-COPY ./LetterboxdFilm.py ./
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN python3 -m venv .venv
-RUN ./.venv/bin/pip install pycurl==7.45.4
-RUN ./.venv/bin/pip install selectolax==0.3.21
+CMD [ "python3", "./get_list.py" ]

@@ -4,3 +4,5 @@
 .vscode
 __pycache__
 *.sh
+.venv
+pylint-poetry-setup.md

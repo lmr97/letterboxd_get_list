@@ -61,7 +61,7 @@ class LetterboxdFilm:
         stats_url       = film_url[:insert_index] + "/csi" + film_url[insert_index:] + "stats/"
         self._stats_url = stats_url
 
-        if (curl_session == None):
+        if (not curl_session):
             self.curl   = Curl()
             self.curl.setopt(self.curl.HTTPHEADER, ["User-Agent: Application"])
         else:
@@ -139,7 +139,7 @@ class LetterboxdFilm:
         ```
         """
 
-        try: 
+        try:
             if (attribute not in TABBED_ATTRS):
                 raise ValueError
         except (ValueError):
@@ -151,7 +151,6 @@ class LetterboxdFilm:
                   "     implementing a method to retrieve the information. \n",
                   "     You can also submit a pull request and implement it yourself.\n",
                   sep="")
-            pass
             
         elements = self._html.css("a[href*='/" + attribute + "/']")
 
@@ -159,10 +158,11 @@ class LetterboxdFilm:
         attribute_list = [e.text() for e in elements]
 
         # return only distinct values, but still as a list
-        if (attribute_list): return list(set(attribute_list))
+        if (attribute_list):
+            return list(set(attribute_list))
 
         # the outcome whether the attribute was not valid or valid but not found for the film
-        else: return ["Not listed"]         
+        else: return ["Not listed"]
     
     
     def get_directors(self) -> list:

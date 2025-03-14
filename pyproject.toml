@@ -11,6 +11,7 @@ license = "MIT"
 python = "^3.12"
 pycurl = "7.45.4"
 selectolax = "0.3.27"
+pylint = "^3.3.5"
 
 [build-system]
 requires = ["poetry-core"]
