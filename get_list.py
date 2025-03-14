@@ -64,6 +64,11 @@ VALID_ATTRS  = ["actor",
                 ]
 
 
+
+def get_film_num_est():
+    return
+
+
 def get_list_with_attrs(list_path: str, attrs: list) -> list:
     """Gets the requested attributed from the films on a Letterboxd list."""
     list_file = []
@@ -114,7 +119,9 @@ def get_list_with_attrs(list_path: str, attrs: list) -> list:
                         case "avg_rating":  found_attr = film.get_avg_rating()
                         case "casting":
                             found_attr = film.get_casting()
-                            found_attr = [f"{key}: {value}" for (key, value) in found_attr.items()]
+                            found_attr = [
+                                f"{key}: {value}" for (key, value) in found_attr.items()
+                            ]
                             found_attr = "; ".join(found_attr)
                             file_row  += "," + found_attr
                         case "likes":       found_attr = film.get_likes()
