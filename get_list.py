@@ -8,10 +8,10 @@
 #
 # The model is as follows:
 #
-#                  CSV text <- (here)
-#                      |         ^
-#                      v         |
-#   Client HTTP <--> Server -> JSON
+#                   CSV text <- (this)
+#                      |          ^
+#            HTTP      v          |
+#   Client  <---->   Server  ->  JSON
 # 
 # simple as.
 
@@ -21,62 +21,30 @@ from pycurl import Curl
 from selectolax.parser import HTMLParser
 from LetterboxdFilm import LetterboxdFilm, TABBED_ATTRS
     
+# TODO: correct cast/casting/casting-director
+# [x] here
+# [] README
 
 # Superset of TABBED_ATTRS list in letterboxdFilm.py
-VALID_ATTRS  = ["actor",
-                "additional-directing",
-                "additional-photography",
-                "art-direction",
-                "assistant-director",
-                "avg_rating",
-                "camera-operator",
-                "casting",
-                "choreography",
-                "cinematography",
-                "composer",
-                "costume-design",
-                "country",
-                "director",
-                "editor",
-                "executive-producer",
-                "genre",
-                "hairstyling",
-                "language",
-                "lighting",
-                "likes",
-                "makeup",
-                "mini-theme",
-                "original-writer",
-                "producer",
-                "production-design",
-                "set-decoration",
-                "songs",
-                "sound",
-                "special-effects",
-                "special-effects",
-                "studio",
-                "stunts",
-                "theme",
-                "title-design",
-                "visual-effects",
-                "watches",
-                "writer"
-                ]
+VALID_ATTRS = []
+with open("./valid-lb-attrs.txt", "r") as attr_file:
+    VALID_ATTRS = attr_file.readlines()
 
-
+VALID_ATTRS = [a.replace("\n", "") for a in VALID_ATTRS]
 
 def get_film_num_est():
     return
 
 
-def get_list_with_attrs(list_path: str, attrs: list) -> list:
+def get_list_with_attrs(query: dict) -> list:
     """Gets the requested attributed from the films on a Letterboxd list."""
     list_file = []
     unretrieved_attrs = []
+    attrs = query['attrs']   # for ease of access
 
     curl = Curl()
     curl.setopt(curl.HTTPHEADER, ["User-Agent: Application", "Connection: Keep-Alive"])
-    lb_list_url = "https://letterboxd.com/" + list_path
+    lb_list_url = f"https://letterboxd.com/{query['author_user']}/list/{query['list_name']}/"
     
     # get number of pages
     curl.setopt(curl.URL, lb_list_url)
@@ -88,7 +56,6 @@ def get_list_with_attrs(list_path: str, attrs: list) -> list:
     list_rank      = 1                                # defining if needed
 
     for current_page in range(1, num_pages+1):        # start at 1, including num_pages in iteration
-
         # use HTML from the GET that helps initialize page_num,
         # if on first iteration
         if (current_page > 1):
@@ -103,8 +70,7 @@ def get_list_with_attrs(list_path: str, attrs: list) -> list:
         ]
 
         for url in film_urls:
-
-            film = LetterboxdFilm(url, curl)
+            film = LetterboxdFilm(url, curl)            # handled by main
 
             title = "\"" + film.title + "\""            # rudimentary sanitizing
             file_row = title+","+film.year
@@ -117,7 +83,7 @@ def get_list_with_attrs(list_path: str, attrs: list) -> list:
                 else:
                     match attr:
                         case "avg_rating":  found_attr = film.get_avg_rating()
-                        case "casting":
+                        case "cast-list":
                             found_attr = film.get_casting()
                             found_attr = [
                                 f"{key}: {value}" for (key, value) in found_attr.items()
@@ -138,7 +104,7 @@ def get_list_with_attrs(list_path: str, attrs: list) -> list:
                 file_row = str(list_rank) + "," + file_row
                 list_rank += 1
 
-            file_row += "\n"
+            print(f"Info for {film.title} ({film.year}) fetched.")
             list_file.append(file_row)
 
         if (current_page == num_pages):
@@ -156,31 +122,48 @@ def get_list_with_attrs(list_path: str, attrs: list) -> list:
     if (list_is_ranked):
         header = "Rank," + header
 
-    header += "\n"
     list_file.insert(0, header)
-
     return list_file
 
 
 def send_csv(conn: socket.socket, list_data: list):
-    """This function sends only the CSV content, not HTTP response."""
-    csv = "\n".join(list_data)
-    conn.sendall(csv)
+    """
+    This function sends only the CSV content, not HTTP response.
+    That is handled by the server.
+    """
+    csv       = "\n".join(list_data) + ""
+    csv_bytes = bytes(csv, "utf-8")
+    conn.sendall(csv_bytes)
 
 def main():
     """See notes at top of file."""
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     listener.bind(('127.0.0.1', 3575))
     listener.listen(1)
+    bad_req = bytes("400 BAD REQUEST", "utf-8")
+    print(f"Listening on {listener.getsockname()}")
 
     while (True):
-        (conn, _) = listener.accept()
-        req = conn.recv(2048)
-        query = json.load(req)
-        list_csv = get_list_with_attrs(query["url"], query["attrs"])
-        send_csv(conn, list_csv)
+        try:
+            (conn, _) = listener.accept()
+            req = conn.recv(2048).decode("utf-8")
+            query = json.loads(req)
+            print(query)
+
+            list_csv = get_list_with_attrs(query)
+            send_csv(conn, list_csv)
+        except Exception as e:
+            print(e)
+            # send only the string "400 BAD REQUEST" and move on
+            # to the next connection.
+            # This is if somehow the client-side JavaScript 
+            # (../static/scripts/lb-app.js) doesn't catch the invalid URL
+            conn.sendall(bad_req) 
+            continue
+        finally:
+            conn.close()    # sends EOF, so that Rust server can read data sent
         
-        print("\n\n\033[0;32mRetrival complete, and data sent!\033[0m\n")
+        print("\n\033[0;32mRetrival complete, and data sent!\033[0m\n")
 
 if (__name__ == "__main__"):
     main()

@@ -1,6 +1,8 @@
 from pycurl import Curl
 from selectolax.parser import HTMLParser
 
+# Attributes that appear (consistently) in the central 
+# tabbed section of a Letterboxd film page
 TABBED_ATTRS = ["actor",
                 "additional-directing",
                 "additional-photography",
@@ -72,21 +74,7 @@ class LetterboxdFilm:
         resp_str        = self.curl.perform_rs()
         status_code     = self.curl.getinfo(self.curl.RESPONSE_CODE)
 
-        try: 
-            assert(status_code == 200)
-        except AssertionError:
-            # if a 3xx error
-            if (status_code >= 400 and status_code < 500):
-                print(f"\nInvalid URL: {film_url}")
-                print(f"Status code: {status_code}\n")
-            elif (status_code >= 500):
-                print("Letterboxd server issue. Try again later.")
-                print(f"Status code: {status_code}\n")
-            else:
-                print(f"Unusual response from server; status code: {status_code}\n")
-            
-            exit()  
-
+        assert(status_code == 200)  # handled by main
         
         page_html        = HTMLParser(resp_str)
         self._html       = page_html
@@ -138,19 +126,6 @@ class LetterboxdFilm:
         >>> ['Adam Somner', 'Ian Calip']
         ```
         """
-
-        try:
-            if (attribute not in TABBED_ATTRS):
-                raise ValueError
-        except (ValueError):
-            print("\nINVALID ARGUMENT ", "\"", attribute, "\" passed to LetterboxdFilm.get_tabbed_attribute()\n",
-                  "\nEXPLANATION: This film information is either not in the HTML by that name,\n",
-                  "     or there is no method imlemented to retireve it yet. \n",
-                  "SUGGESTED ACTION: If it seems like the latter is the case, \n",
-                  "     please open up a GitHub issue and I will work on \n",
-                  "     implementing a method to retrieve the information. \n",
-                  "     You can also submit a pull request and implement it yourself.\n",
-                  sep="")
             
         elements = self._html.css("a[href*='/" + attribute + "/']")
 
