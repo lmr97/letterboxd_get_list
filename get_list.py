@@ -82,7 +82,7 @@ def get_list_with_attrs(query: dict) -> list:
                     found_attr = film.get_tabbed_attribute(attr)
                 else:
                     match attr:
-                        case "avg_rating":  found_attr = film.get_avg_rating()
+                        case "avg-rating":  found_attr = film.get_avg_rating()
                         case "cast-list":
                             found_attr = film.get_casting()
                             found_attr = [
@@ -138,7 +138,7 @@ def send_csv(conn: socket.socket, list_data: list):
 def main():
     """See notes at top of file."""
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    listener.bind(('127.0.0.1', 3575))
+    listener.bind(('0.0.0.0', 3575))
     listener.listen(1)
     bad_req = bytes("400 BAD REQUEST", "utf-8")
     print(f"Listening on {listener.getsockname()}")

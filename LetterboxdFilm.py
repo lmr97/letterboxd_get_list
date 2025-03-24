@@ -151,8 +151,15 @@ class LetterboxdFilm:
     def get_genres(self) -> list:
         return self.get_tabbed_attribute("genre")
     
+    # requires extra logic to shave off "Country" list item
     def get_countries(self) -> list:
-        return self.get_tabbed_attribute("country")
+        countries = self.get_tabbed_attribute("country")
+        try:
+            countries.remove("Country")
+        except ValueError as ve:    # list.remove() could throw ValueError
+            print(ve)
+        finally:
+            return countries
     
     def get_studios(self) -> list:
         return self.get_tabbed_attribute("studio")
