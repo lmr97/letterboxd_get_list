@@ -1,2 +1,2 @@
-pycurl=="7.45.4"
-selectolax=="0.3.27"
+pycurl == 7.45.4
+selectolax == 0.3.27
