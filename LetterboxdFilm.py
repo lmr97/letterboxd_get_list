@@ -129,8 +129,9 @@ class LetterboxdFilm:
             
         elements = self._html.css("a[href*='" + attribute + "']")
 
-        # extract text from found HTML elements
-        attribute_list = [e.text().strip() for e in elements]
+        # extract text from found HTML elements,
+        # stripping out whitespace and commas
+        attribute_list = [e.text().strip().replace(",","") for e in elements]
 
         # Remove plural and singluar versions of occurrences 
         # of the attribute name in the list, because sometimes that happens
@@ -143,6 +144,8 @@ class LetterboxdFilm:
         for av in attr_versions:
             if av in attribute_list:
                 attribute_list.remove(av)
+        
+
 
         # return only distinct values, but still as a list
         if (attribute_list):
