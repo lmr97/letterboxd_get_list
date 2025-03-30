@@ -110,7 +110,7 @@ class LetterboxdFilm:
         (except for the Releases tab, as this section follows a different 
         structure).
 
-        Will return `["Not listed"]` (a list with that string as its 
+        Will return `["(not listed)"]` (a list with that string as its 
         only element) if the attribute was not found for the given film, 
         whether it was a valid attribute or not. An invalid argument warning is 
         printed after a ValueError is raised if the attribute is not valid.
@@ -127,17 +127,18 @@ class LetterboxdFilm:
         ```
         """
             
-        elements = self._html.css("a[href*='/" + attribute + "/']")
+        elements = self._html.css("a[href*='" + attribute + "']")
 
         # extract text from found HTML elements
-        attribute_list = [e.text() for e in elements]
+        attribute_list = [e.text().strip() for e in elements]
+
 
         # return only distinct values, but still as a list
         if (attribute_list):
             return list(set(attribute_list))
 
         # the outcome whether the attribute was not valid or valid but not found for the film
-        else: return ["Not listed"]
+        else: return ["(not listed)"]
     
     
     def get_directors(self) -> list:
@@ -151,8 +152,11 @@ class LetterboxdFilm:
     def get_genres(self) -> list:
         return self.get_tabbed_attribute("genre")
     
-    # requires extra logic to shave off "Country" list item
     def get_countries(self) -> list:
+        """
+        This attribute equires extra logic to shave off 
+        additional list item that is just "Country".
+        """
         countries = self.get_tabbed_attribute("country")
         try:
             countries.remove("Country")
