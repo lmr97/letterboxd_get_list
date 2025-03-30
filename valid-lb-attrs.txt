@@ -29,7 +29,6 @@ set-decoration
 songs
 sound
 special-effects
-special-effects
 studio
 stunts
 theme
