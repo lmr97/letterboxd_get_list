@@ -132,6 +132,17 @@ class LetterboxdFilm:
         # extract text from found HTML elements
         attribute_list = [e.text().strip() for e in elements]
 
+        # Remove plural and singluar versions of occurrences 
+        # of the attribute name in the list, because sometimes that happens
+        attr_versions = [
+            attribute, 
+            attribute+"s", 
+            attribute.capitalize(),
+            attribute.capitalize()+"s"
+        ]
+        for av in attr_versions:
+            if av in attribute_list:
+                attribute_list.remove(av)
 
         # return only distinct values, but still as a list
         if (attribute_list):
@@ -153,17 +164,7 @@ class LetterboxdFilm:
         return self.get_tabbed_attribute("genre")
     
     def get_countries(self) -> list:
-        """
-        This attribute equires extra logic to shave off 
-        additional list item that is just "Country".
-        """
-        countries = self.get_tabbed_attribute("country")
-        try:
-            countries.remove("Country")
-        except ValueError as ve:    # list.remove() could throw ValueError
-            print(ve)
-        finally:
-            return countries
+        return countries
     
     def get_studios(self) -> list:
         return self.get_tabbed_attribute("studio")
