@@ -164,7 +164,7 @@ class LetterboxdFilm:
         return self.get_tabbed_attribute("genre")
     
     def get_countries(self) -> list:
-        return countries
+        return self.get_tabbed_attribute("countries")
     
     def get_studios(self) -> list:
         return self.get_tabbed_attribute("studio")

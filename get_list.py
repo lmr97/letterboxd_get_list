@@ -80,10 +80,7 @@ def get_csv_row(film: LetterboxdFilm, attrs: list, list_is_ranked: bool, list_ra
 
         found_attr = "(not found)"              # default
         if (attr in TABBED_ATTRS):
-            if (attr == "country"):
-                found_attr = film.get_countries()   # has extra logic needed
-            else:
-                found_attr = film.get_tabbed_attribute(attr)
+            found_attr = film.get_tabbed_attribute(attr)
         else:
             match attr:
                 case "avg-rating":  found_attr = film.get_avg_rating()
