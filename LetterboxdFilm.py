@@ -37,6 +37,12 @@ TABBED_ATTRS = ["actor",
                 "writer"
                 ]
 
+class RequestError(Exception):
+    pass
+
+class HTTPError(Exception):
+    pass 
+
 class LetterboxdFilm:
     """
     This class gets the HTML for the pages relevant to a film on Letterboxd,
@@ -72,21 +78,13 @@ class LetterboxdFilm:
         resp_str        = self.curl.perform_rs()
         status_code     = self.curl.getinfo(self.curl.RESPONSE_CODE)
 
-        try: 
-            assert(status_code == 200)
-        except AssertionError:
-            # if a 3xx error
+        if (status_code != 200):
             if (status_code >= 400 and status_code < 500):
-                print(f"\nInvalid URL: {film_url}")
-                print(f"Status code: {status_code}\n")
+                raise RequestError(f"\nInvalid URL: {film_url}\nStatus code: {status_code}\n")
             elif (status_code >= 500):
-                print("Letterboxd server issue. Try again later.")
-                print(f"Status code: {status_code}\n")
+                raise HTTPError("Letterboxd server issue. Try again later.\nStatus code: {status_code}\n")
             else:
-                print(f"Unusual response from server; status code: {status_code}\n")
-            
-            exit()  
-
+                raise HTTPError(f"Unusual response from server; status code: {status_code}\n")
         
         page_html        = HTMLParser(resp_str)
         self._html       = page_html
@@ -151,15 +149,28 @@ class LetterboxdFilm:
                   "     implementing a method to retrieve the information. \n",
                   "     You can also submit a pull request and implement it yourself.\n",
                   sep="")
-            pass
             
         elements = self._html.css("a[href*='/" + attribute + "/']")
 
-        # extract text from found HTML elements
-        attribute_list = [e.text() for e in elements]
+        # extract text from found HTML elements,
+        # stripping out whitespace and commas
+        attribute_list = [e.text().strip().replace(",","") for e in elements]
+
+        # Remove plural and singluar versions of occurrences 
+        # of the attribute name in the list, because sometimes that happens
+        attr_versions = [
+            attribute, 
+            attribute+"s", 
+            attribute.capitalize(),
+            attribute.capitalize()+"s"
+        ]
+        for av in attr_versions:
+            if av in attribute_list:
+                attribute_list.remove(av)
 
         # return only distinct values, but still as a list
-        if (attribute_list): return list(set(attribute_list))
+        if (attribute_list): 
+            return list(set(attribute_list))
 
         # the outcome whether the attribute was not valid or valid but not found for the film
         else: return ["Not listed"]         

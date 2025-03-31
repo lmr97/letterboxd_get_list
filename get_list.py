@@ -3,53 +3,20 @@
 from sys import argv
 from shutil import get_terminal_size
 from math import ceil
+import re
 from datetime import datetime
 from argparse import ArgumentParser
 from pycurl import Curl
-from LetterboxdFilm import LetterboxdFilm, TABBED_ATTRS
+from LetterboxdFilm import LetterboxdFilm, TABBED_ATTRS, RequestError, HTTPError
 from selectolax.parser import HTMLParser
-    
+
 
 # Superset of TABBED_ATTRS list in letterboxdFilm.py
-VALID_ATTRS  = ["actor",
-                "additional-directing",
-                "additional-photography",
-                "art-direction",
-                "assistant-director",
-                "avg_rating",
-                "camera-operator",
-                "casting",
-                "choreography",
-                "cinematography",
-                "composer",
-                "costume-design",
-                "country",
-                "director",
-                "editor",
-                "executive-producer",
-                "genre",
-                "hairstyling",
-                "language",
-                "lighting",
-                "likes",
-                "makeup",
-                "mini-theme",
-                "original-writer",
-                "producer",
-                "production-design",
-                "set-decoration",
-                "songs",
-                "sound",
-                "special-effects",
-                "special-effects",
-                "studio",
-                "stunts",
-                "theme",
-                "title-design",
-                "visual-effects",
-                "watches",
-                "writer"
-                ]
+VALID_ATTRS = []
+with open("./valid-lb-attrs.txt", "r") as attr_file:
+    VALID_ATTRS = attr_file.readlines()
+
+VALID_ATTRS = [a.replace("\n", "") for a in VALID_ATTRS]
 
 def print_progress_bar(rows_now: int, total_rows: int, func_start_time: datetime):
     output_width  = get_terminal_size(fallback=(80,25))[0]-37    # runs every call to adjust as terminal changes
@@ -67,6 +34,28 @@ def print_progress_bar(rows_now: int, total_rows: int, func_start_time: datetime
             f"Time remaining: {minutes:02d}:{seconds:02d}",
             end = "\r")
 
+
+def get_list_len(html_dom: HTMLParser) -> int:
+    """
+    Finds exact list length from first page's HTML.
+
+    It works by using a description <meta> element in the HTML header 
+    that follows the form "A list of <number> films compiled on
+    Letterboxd, including <film>..." etc. (The user-made description of the 
+    list comes after this standard-issue desc., after "About this list:").
+    """
+
+    # the first element is the one we want
+    descr_el  = html_dom.css("meta[name='description']")[0]
+    list_desc = descr_el.attributes['content']
+
+    # get first number in the descr. str (which is list length),
+    # using a regex search
+    number_re = re.compile("[0-9]+")
+    len_match = re.search(number_re, list_desc)         # gets first match
+    list_len  = int(len_match[0])                       # cast to int for transmission
+
+    return list_len
 
 
 def get_list_with_attrs(letterboxd_list_url: str,
@@ -88,7 +77,13 @@ def get_list_with_attrs(letterboxd_list_url: str,
         # get number of pages
         curl.setopt(curl.URL, letterboxd_list_url)
         listpage       = curl.perform_rs()
+
+        # check URL validity
+        if (curl.getinfo(curl.HTTP_CODE) != 200):
+            raise RequestError("Invalid URL; please check the URL entered and try again.")
+        
         tree           = HTMLParser(listpage)
+        list_len       = get_list_len(tree)
         page_num_nodes = tree.css("li.paginate-page")           # finds all page number nodes
         num_pages      = max(1, len(page_num_nodes))            # guarantee num_pages is at least 1
         list_is_ranked = bool(tree.css("p.list-number"))        # casts empty list of rank number nodes to False
@@ -96,7 +91,7 @@ def get_list_with_attrs(letterboxd_list_url: str,
 
         for current_page in range(1, num_pages+1):              # start at 1, and include num_pages in iteration
             
-            # use HTML from the GET that helps initialize page_num, 
+            # use HTML from the GET that helps initialize page_num,
             # if on first iteration
             if (current_page > 1):
                 curl.setopt(curl.URL, letterboxd_list_url+"page/"+str(current_page)+"/")
@@ -119,19 +114,19 @@ def get_list_with_attrs(letterboxd_list_url: str,
                         found_attr = film.get_tabbed_attribute(attr)
                     else:
                         match attr:
-                            case "avg_rating":  found_attr = film.get_avg_rating()
+                            case "avg-rating":  found_attr = film.get_avg_rating()
                             case "casting":     found_attr = film.get_casting()
                             case "likes":       found_attr = film.get_likes()
                             case "watches":     found_attr = film.get_watches()
                             
                     
                     # convert list or dict to CSV-friendly format
-                    if   (type(found_attr) == list):
+                    if   (isinstance(found_attr, list)):
                         
                         found_attr = "; ".join(found_attr)  # separate list elements by ";", not "," 
                         file_row  += "," + found_attr
 
-                    elif (type(found_attr) == dict):
+                    elif (isinstance(found_attr, dict)):
 
                         found_attr = [f"{key}: {value}" for (key, value) in found_attr.items()]
                         found_attr = "; ".join(found_attr)
@@ -140,21 +135,19 @@ def get_list_with_attrs(letterboxd_list_url: str,
                     else:
                         file_row  += "," + str(found_attr)
 
-                if (list_is_ranked): 
+                if (list_is_ranked):
                     file_row = str(list_rank) + "," + file_row
                     list_rank += 1
 
                 file_row += "\n"
                 list_file.append(file_row)
 
-                # make sure loading bar has the correct denominator
-                if (len(film_urls) < 100):
-                    print_progress_bar(len(list_file), 100*num_pages - (100-len(film_urls)), start_time)
-                else:
-                    print_progress_bar(len(list_file), len(film_urls)*num_pages, start_time)
+                print_progress_bar(len(list_file), list_len, start_time)
 
 
-            if (current_page == num_pages): break
+            if (current_page == num_pages):
+                break
+
             current_page += 1
         
 
@@ -164,7 +157,8 @@ def get_list_with_attrs(letterboxd_list_url: str,
             if (attr not in unretrieved_attrs):
                 header += "," + attr.capitalize()
         
-        if (list_is_ranked): header = "Rank," + header
+        if (list_is_ranked):
+            header = "Rank," + header
 
         header += "\n"
         list_file.insert(0, header)
@@ -211,12 +205,18 @@ def parse_CLI_args():
 def main():
     cli_args = parse_CLI_args()
 
-    get_list_with_attrs(cli_args['list_url'][0],    # sends first argument as a list
-                        cli_args['attributes'],
-                        cli_args['output_file'][0])
-
-    print("\n\n\033[0;32mRetrival complete!\033[0m\n")
-
+    try:
+        get_list_with_attrs(cli_args['list_url'][0],    # sends first argument as a list
+                            cli_args['attributes'],
+                            cli_args['output_file'][0])
+        print("\n\n\033[0;32mRetrival complete!\033[0m\n")
+    except RequestError as rqe:
+        print(f"There is an issue with the input of your request: {repr(rqe)}")
+    except HTTPError as hpe:
+        print(f"Network issue during runtime: {repr(hpe)}")
+    except Exception as e:
+        print(f"Runtime error: {repr(e)}")
+        print("If you're seeing this, please submit an issue on GitHub.")
 
 
 if (__name__ == "__main__"):
