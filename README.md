@@ -22,10 +22,10 @@ poetry install
 Then run with Poetry. For example:
 
 ```
-poetry run python get_list.py 
-    --list-url https://letterboxd.com/crew/list/2024-highest-rated-films/ 
-    --attributes director watches avg_rating 
-    --output-file 2024-highest-rated.csv
+poetry run python get_list.py \
+    --list-url https://letterboxd.com/crew/list/2024-highest-rated-films/ \
+    --attributes director watches avg_rating \
+    --output-file 2024-highest-rated.csv \
 ```
 
 ### Docker container
@@ -70,7 +70,7 @@ The valid attribute arguments are as follows:
 * additional-photography
 * art-direction
 * assistant-director
-* avg_rating
+* avg-rating
 * camera-operator
 * casting
 * choreography
@@ -95,7 +95,6 @@ The valid attribute arguments are as follows:
 * songs
 * sound
 * special-effects
-* special-effects
 * studio
 * stunts
 * theme
@@ -114,12 +113,12 @@ Additional notes about output formatting:
 A loading bar will display to show the progress, and once the program has written to the output file, it will print `Retrieval complete!` and terminate. The first few lines of the CSV that results from the above command is shown below:
 
 ```
-Rank,Title,Year,Director,Watches,Avg_rating
-1,"Dune: Part Two",2024,Denis Villeneuve,2628745,4.41
-2,"I'm Still Here",2024,Walter Salles,424304,4.34
-3,"How to Make Millions Before Grandma Dies",2024,Pat Boonnitipat,105415,4.33
-4,"Look Back",2024,Kiyotaka Oshiyama,258750,4.27
-5,"Sing Sing",2023,Greg Kwedar,165271,4.27
+Rank,Title,Year,Director,Watches,Avg-rating
+1,"Dune: Part Two",2024,Denis Villeneuve,2744519,4.4
+2,"I'm Still Here",2024,Walter Salles,592017,4.33
+3,"How to Make Millions Before Grandma Dies",2024,Pat Boonnitipat,113632,4.33
+4,"Look Back",2024,Kiyotaka Oshiyama,278852,4.27
+5,"Sing Sing",2023,Greg Kwedar,225983,4.28
 ...
 ```
 
