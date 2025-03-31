@@ -74,6 +74,10 @@ def send_list_len(html_dom: HTMLParser, conn: socket.socket):
     conn.sendall(int_as_bytes)
 
 def send_list_len_err(conn: socket.socket):
+    """
+    List length still needs to be sent regardless, but on an error
+    condition, it can be a constant (0).
+    """
     list_len_err = 0
     int_as_bytes = list_len_err.to_bytes(SIZE_BYTES, ENDIANNESS)
     conn.sendall(int_as_bytes)
