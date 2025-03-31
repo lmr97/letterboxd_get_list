@@ -39,9 +39,11 @@ with open("./valid-lb-attrs.txt", "r") as attr_file:
 
 VALID_ATTRS = [a.replace("\n", "") for a in VALID_ATTRS]
 
-# to distinguish my syntax errors from genuine 
-# request errors made by client
 class RequestError(Exception):
+    """
+    to distinguish my syntax errors from genuine 
+    request errors made by client
+    """
     pass
 
 # get number of films: 
