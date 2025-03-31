@@ -24,8 +24,8 @@ Then run with Poetry. For example:
 ```
 poetry run python get_list.py \
     --list-url https://letterboxd.com/crew/list/2024-highest-rated-films/ \
-    --attributes director watches avg_rating \
-    --output-file 2024-highest-rated.csv \
+    --attributes director watches avg-rating \
+    --output-file 2024-highest-rated.csv
 ```
 
 ### Docker container
