@@ -39,6 +39,10 @@ with open("./valid-lb-attrs.txt", "r") as attr_file:
 
 VALID_ATTRS = [a.replace("\n", "") for a in VALID_ATTRS]
 
+# to distinguish my syntax errors from genuine 
+# request errors made by client
+class RequestError(Exception):
+    pass
 
 # get number of films: 
 def send_list_len(html_dom: HTMLParser, conn: socket.socket):
@@ -67,6 +71,10 @@ def send_list_len(html_dom: HTMLParser, conn: socket.socket):
     int_as_bytes = list_len.to_bytes(SIZE_BYTES, ENDIANNESS)
     conn.sendall(int_as_bytes)
 
+def send_list_len_err(conn: socket.socket):
+    list_len_err = 0
+    int_as_bytes = list_len_err.to_bytes(SIZE_BYTES, ENDIANNESS)
+    conn.sendall(int_as_bytes)
 
 def get_csv_row(film: LetterboxdFilm, attrs: list, list_is_ranked: bool, list_rank: int):
     """
@@ -134,7 +142,6 @@ def send_line(conn: socket.socket, line: str):
     conn.sendall(byte_len)
 
     # send row itself
-    
     print(byte_row)
     conn.sendall(byte_row)
 
@@ -153,11 +160,18 @@ def get_list_with_attrs(query: dict, conn: socket.socket) -> None:
     curl.setopt(curl.URL, lb_list_url)
     listpage       = curl.perform_rs()                
 
-    # check URL validity
+    # check URL validity. Must send a "list length"
+    # of 0 in order for the server to take the right amount of bytes
+    # for the error message.
     if (curl.getinfo(curl.HTTP_CODE) != 200):
         err_msg = f"Error in fetching webpage. Response status: {curl.getinfo(curl.HTTP_CODE)}"
-        send_line(conn, err_msg)
-        raise Exception(err_msg)
+        send_list_len_err(conn)
+        raise RequestError(err_msg)
+
+    # validate attrs. must occur here for a similar reason.
+    if not set(attrs).issubset(VALID_ATTRS):
+        send_list_len_err(conn)
+        raise RequestError("Invalid attributes submitted.")
 
     # get number of pages
     tree           = HTMLParser(listpage)
@@ -234,15 +248,15 @@ def main():
             query = json.loads(req)
 
             get_list_with_attrs(query, conn)
+        except RequestError as req_err:
+            print(req_err)
+            send_line(conn, f"-- 400 BAD REQUEST -- {repr(req_err)}")
         except Exception as e:
             print(e)
-            # send the exception as a string, with
-            # "-- 400 BAD REQUEST --" prepended, and then 
-            # move on to the next connection.
-            send_line(conn, f"-- 400 BAD REQUEST -- {repr(e)}")
-            continue
+            send_line(conn, f"-- 500 INTERNAL SERVER ERROR -- {repr(e)}")
         finally:
             conn.close()    # sends EOF, so that Rust server can read data sent
+            continue
         
         print("\n\033[0;32mRetrival complete, and data sent!\033[0m\n")
 
