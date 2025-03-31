@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "letterboxd-get-list"
-version = "0.6.0"
+version = "1.0.0"
 description = "Gets and formats a given list from Letterboxd.com, with specified film attributes."
 package-mode = false
 authors = ["lmr97 <lmreid1997@gmail.com>"]
