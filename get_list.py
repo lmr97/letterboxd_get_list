@@ -63,8 +63,8 @@ def send_list_len(html_dom: HTMLParser, conn: socket.socket):
     descr_el  = html_dom.css("meta[name='description']")[0]
     list_desc = descr_el.attributes['content']
 
-    # get first number in the descr. str (which is list length), 
-    # using a regex search 
+    # get first number in the descr. str (which is list length),
+    # using a regex search
     number_re = re.compile("[0-9]+")
     len_match = re.search(number_re, list_desc)         # gets first match
     list_len  = int(len_match[0])                       # cast to int for transmission
@@ -154,14 +154,14 @@ def send_line(conn: socket.socket, line: str):
 
 def get_list_with_attrs(query: dict, conn: socket.socket) -> None:
     """Gets the requested attributed from the films on a Letterboxd list."""
-    
+
     attrs = query['attrs']   # for ease of access
 
     # config PyCurl and set up base URL
     curl = Curl()
     curl.setopt(curl.HTTPHEADER, ["User-Agent: Application", "Connection: Keep-Alive"])
     lb_list_url = f"https://letterboxd.com/{query['author_user']}/list/{query['list_name']}/"
-    
+
     # get list's HTML (page 1)
     curl.setopt(curl.URL, lb_list_url)
     listpage       = curl.perform_rs()                
@@ -253,7 +253,13 @@ def main():
             req = conn.recv(2048).decode("utf-8")
             query = json.loads(req)
 
+            # for Docker healthchecks
+            if query == {"msg": "are you healthy?"}:
+                print("yep, still healthy!")
+                continue
+
             get_list_with_attrs(query, conn)
+
         except RequestError as req_err:
             print(req_err)
             send_line(conn, f"-- 400 BAD REQUEST -- {repr(req_err)}")
