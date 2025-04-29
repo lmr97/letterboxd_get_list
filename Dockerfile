@@ -1,6 +1,10 @@
 # largely just copied from Python's official Docker image page
 FROM python:3.13
 
+RUN useradd -m converter
+USER converter
+WORKDIR /home/converter
+
 COPY requirements.txt  ./
 COPY get_list.py       ./
 COPY LetterboxdFilm.py ./
