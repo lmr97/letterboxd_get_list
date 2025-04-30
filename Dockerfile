@@ -5,10 +5,11 @@ RUN useradd -m converter
 USER converter
 WORKDIR /home/converter
 
-COPY requirements.txt  ./
-COPY get_list.py       ./
-COPY LetterboxdFilm.py ./
-COPY healthcheck.py    ./
+COPY requirements.txt   ./
+COPY valid-lb-attrs.txt ./
+COPY get_list.py        ./
+COPY LetterboxdFilm.py  ./
+COPY healthcheck.py     ./
 
 RUN pip install --no-cache-dir -r requirements.txt
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
