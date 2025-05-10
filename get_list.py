@@ -154,8 +154,9 @@ def get_list_with_attrs(letterboxd_list_url: str,
         # finalize header
         header = "Title,Year"
         for attr in attrs:
-            if (attr not in unretrieved_attrs):
-                header += "," + attr.capitalize()
+            words    = attr.split("-")
+            uc_words = " ".join([w.capitalize() for w in words])
+            header  += "," + uc_words   
         
         if (list_is_ranked):
             header = "Rank," + header
