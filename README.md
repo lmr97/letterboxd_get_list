@@ -35,7 +35,7 @@ The best way to install a Python CLI app is via a virtual environment, and link 
     ln -s "$PWD/lb-venv/bin/lblist" ~/.local/bin/lblist
     ```
 
-**Warning**: since the executable is symlinked, you can't move the folder where you defined the virtual environment (`lb-venv` in the commands above), or else it will cause the executable to be moved as well. This, of course, can be fixed by moving the virtual environment folder back into where you made it.
+**Warning**: since the executable is symlinked, you can't move the folder where you defined the virtual environment (`lb-venv` in the commands above), or else you'll get "command not found"-type errors. This, of course, can be fixed by moving the virtual environment folder back into where you made it.
 
 ### Windows
 
