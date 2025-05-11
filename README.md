@@ -1,57 +1,97 @@
 # letterboxd_get_list
 
-This repo has a CLI program that can convert any Letterboxd list into a CSV file, and get any desired information for each film in the list (title and year are added by default). It also has a `LetterboxdFilm` class definition (upon which `get_list.py` depends), which allows for quick access to film information off Letterboxd given the URL to the film.
+This repo has a CLI program that can convert any Letterboxd list into a CSV file, and get any desired information for each film in the list (title and year are added by default). It also has a `LetterboxdFilm` class definition (upon which `lblist` depends), which allows for quick access to film information off Letterboxd given the URL to the film.
 
 **Please note: this program will take a while for long lists.** Since I have no API access for Letterboxd, the program has to make 1-2 GET requests for each film on the list (at least one for any info, with a separate one for statistics). I've optimized as best I can given this, and I've provided a progress bar with the estimated time remaining on it so at least expectations can be set appropriately. 
 
-## Installation
+## Installation 
 
-Clone the respoitory:
+### Linux/MacOS
+
+The best way to install a Python CLI app is via a virtual environment, and link it to the default path for your shell.
+
+1. Clone the respoitory:
+
+    ```
+    git clone https//github.com/lmr97/letterboxd_get_list
+    cd letterboxd_get_list
+    ```
+
+2. Create a Python virtual environment (called `lb-venv`):
+
+    ```
+    python3 -m venv ./lb-venv
+    ```
+
+3. Install the module into this virtual environment:
+
+    ```
+    ./lb-venv/bin/pip install ./letterboxd_list
+    ```
+
+4. Create a [symbolic link](https://en.wikipedia.org/wiki/Symbolic_link) to a non-privileged part of your [`$PATH`](https://en.wikipedia.org/wiki/PATH_(variable)), for example:
+
+    ```
+    ln -s "$PWD/lb-venv/bin/lblist" ~/.local/bin/lblist
+    ```
+
+**Warning**: since the executable is symlinked, you can't move the folder where you defined the virtual environment (`lb-venv` in the commands above), or else it will cause the executable to be moved as well. This, of course, can be fixed by moving the virtual environment folder back into where you made it.
+
+### Windows
+
+Since this is a Python app, you can follow essentially the same steps on Windows as on Linux/MacOS (especially if you're using Git Bash), with a couple tweaks. Here's the process on Windows: 
+
+1. Open up the Command Prompt (`cmd.exe`), and then execute `pwsh` (start PowerShell session).
+
+2. Clone the repo, and enter the folder 
+    ```
+    git clone https//github.com/lmr97/letterboxd_get_list
+    cd letterboxd_get_list      # yep, cd works in PowerShell!
+    ```
+
+3. Create a Python virtual environment (this step is pretty much identical to the Linux/MacOS):
+
+    ```
+    python3 -m venv ./lb-venv   # forward slashes are valid in PowerShell!
+    ```
+
+4. Install the `letterboxd_list` module in this virtual environment:
+
+    ```
+    lb-venv/Scripts/pip install ./letterboxd_list
+    ```
+
+5. Find and copy the absolute path to the folder containing `lblist.exe` within the virtual environment (it's probably going to be something like `C:\path\to\repo\lb-venv\Scripts`).
+
+6. Add this path to your shell's path. Here's [a great blog post](https://www.eukhost.com/kb/how-to-add-to-the-path-on-windows-10-and-windows-11/) on how to do so on Windows.
+
+
+## Getting updates
+
+Since updates are pushed here though GitHub, getting updates is easy: Simply navigate back to where you cloned the repository, then run:
 
 ```
-git clone https//github.com/lmr97/letterboxd_get_list
-cd letterboxd_get_list
+git pull
+./lb-venv/bin/pip install --upgrade ./letterboxd_list
 ```
 
-Then install dependencies with Poetry:
+Note the `--upgrade` flag in the second command; that's where it differs from the initial install command.
+
+Now you can run the executable as `lblist`! Here's an example:
 
 ```
-poetry install
-```
-
-Then run with Poetry. For example:
-
-```
-poetry run python get_list.py \
-    --list-url https://letterboxd.com/crew/list/2024-highest-rated-films/ \
+lblist --list-url https://letterboxd.com/crew/list/2024-highest-rated-films/ \
     --attributes director watches avg-rating \
     --output-file 2024-highest-rated.csv
 ```
 
-### Docker container
 
-There is a GitHub Package for this repo called `letterboxd_get_list` which runs out of a Docker container (linked in the Packages section in the sidebar). You can pull the image with the command below, or build it yourself with the Dockerfile included here. 
-
-```
-docker pull ghcr.io/lmr97/letterboxd_get_list:latest
-```
-
-For easy retrieval of output files, I would recommend binding a folder to the container when you run it, like so:
+## `lblist` CLI usage
 
 ```
-mkdir OutputFiles 
-docker run -d \
-    --name get-lb-list \
-    -v "${pwd}"/OutputFiles:/home/runner/OutputFiles
-    letterboxd_get_list:latest
-```
-
-## `get_list.py` CLI usage
-
-```
-get_list.py [-h] -u, --list-url LIST_URL
-                [-a, --attributes VALID_ATTRIBUTE [...]]
-                [-o, --output-file OUTPUT_FILE]
+lblist [-h] -u, --list-url LIST_URL
+       [-a, --attributes VALID_ATTRIBUTE [...]]
+       [-o, --output-file OUTPUT_FILE]
 ```
 
 Abbreviated options are accepted as well. In a bit more detail:
@@ -65,43 +105,46 @@ Option | Descriptions
 
 The valid attribute arguments are as follows:
 
-* actor
-* additional-directing
-* additional-photography
-* art-direction
-* assistant-director
-* avg-rating
-* camera-operator
-* casting
-* choreography
-* cinematography
-* composer
-* costume-design
-* country
-* director
-* editor
-* executive-producer
-* genre
-* hairstyling
-* language
-* lighting
-* likes
-* makeup
-* mini-theme
-* original-writer
-* producer
-* production-design
-* set-decoration
-* songs
-* sound
-* special-effects
-* studio
-* stunts
-* theme
-* title-design
-* visual-effects
-* watches
-* writer
+* `actor`
+* `additional-directing`
+* `additional-photography`
+* `art-direction`
+* `assistant-director`
+* `avg-rating`
+* `camera-operator`
+* `casting`
+* `cast-list`
+* `choreography`
+* `cinematography`
+* `composer`
+* `costume-design`
+* `country`
+* `director`
+* `editor`
+* `executive-producer`
+* `genre`
+* `hairstyling`
+* `language`
+* `lighting`
+* `likes`
+* `makeup`
+* `mini-theme`
+* `original-writer`
+* `producer`
+* `production-design`
+* `set-decoration`
+* `songs`
+* `sound`
+* `special-effects`
+* `studio`
+* `stunts`
+* `theme`
+* `title-design`
+* `visual-effects`
+* `watches`
+* `writer`
+
+You can find this list in `valid-lb-attrs.txt`.
 
 Additional notes about output formatting:
 
@@ -156,6 +199,14 @@ See example below:
 **Returns**: `dict`
 
 This method returns a dictionary that encodes the casting of a film, with the actor's names as keys, and the characters they play as values. 
+
+## `LetterboxdList` class
+
+This class is a composition of the `LetterboxdFilm` class, and is designed to behave like a Python list, complete with slicing and iterators. It includes some basic data like the list's name, its length, and a list of film URLs to each film in the list. This list is kept as strings, because initializing them all as `LetterboxdFilm` objects is quite resource intensive. It can be done, however, by specifying `sub_init=True` in the constructor, and individually by calling `init_film(n)`, where `n` is the *n*th film in the list.
+
+### Slicing
+
+`LetterboxdList` instances support slicing! Note that the object returned via slicing is also a `LetterboxdList` with the same info (it's a deep copy). If you are simply indexing into the list, however, the object returned is either a string or a `LetterboxdFilm`, depending on if that list element has been initialized or not.
 
 ## Feedback
 
