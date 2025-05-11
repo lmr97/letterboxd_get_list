@@ -1,8 +1,8 @@
-# letterboxd_get_list
+# Letterboxd Lists to CSVs!
 
 This repo has a CLI program that can convert any Letterboxd list into a CSV file, and get any desired information for each film in the list (title and year are added by default). It also has a `LetterboxdFilm` class definition (upon which `lblist` depends), which allows for quick access to film information off Letterboxd given the URL to the film.
 
-**Please note: this program will take a while for long lists.** Since I have no API access for Letterboxd, the program has to make 1-2 GET requests for each film on the list (at least one for any info, with a separate one for statistics). I've optimized as best I can given this, and I've provided a progress bar with the estimated time remaining on it so at least expectations can be set appropriately. 
+**Please note: this program will take a while for long lists.** Since I have no API access for Letterboxd, the program has to make 1-2 HTTP GET requests for each film on the list. It ends up converting at a rate of about 2-4 films/second (faster for general info alone, slower if statistics are included). I've optimized as best I can given this, and I've provided a progress bar with the estimated time remaining on it so at least expectations can be set appropriately. 
 
 ## Installation 
 
