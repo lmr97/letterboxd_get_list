@@ -85,6 +85,7 @@ class LetterboxdList:
         )
         self._curl.setopt(self._curl.URL, url)
         first_page_html = HTMLParser(self._curl.perform_rs())
+        self._name      = first_page_html.css(".title-1")[0].text()
         self._length    = self._get_list_len(first_page_html)
 
         page_num_nodes  = first_page_html.css("li.paginate-page > a")
@@ -189,6 +190,13 @@ class LetterboxdList:
         return self._films.__iter__()
 
     @property
+    def film_list(self) -> list:
+        """
+        This returns the inner list, as is; it may be partially initialized.
+        """
+        return self._films
+
+    @property
     def is_ranked(self) -> bool:
         """
         Whether the list is ranked or not.
@@ -203,11 +211,11 @@ class LetterboxdList:
         return self._length
 
     @property
-    def film_list(self) -> list:
+    def name(self) -> str:
         """
-        This returns the inner list, as is; it may be partially initialized.
+        The name of the list.
         """
-        return self._films
+        return self._name
 
     @property
     def num_pages(self) -> int:

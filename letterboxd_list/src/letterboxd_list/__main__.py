@@ -7,15 +7,49 @@ from shutil import get_terminal_size
 from math import ceil
 from datetime import datetime
 from argparse import ArgumentParser
-import letterboxd_list as lbl
+import letterboxd_list.containers as lbl
 
-
-# Superset of lbl.TABBED_ATTRS list in lbl.LetterboxdFilm.py
-VALID_ATTRS = []
-with open("./valid-lb-attrs.txt", "r", encoding="utf-8") as attr_file:
-    VALID_ATTRS = attr_file.readlines()
-
-VALID_ATTRS = [a.replace("\n", "") for a in VALID_ATTRS]
+# Superset of lbl.TABBED_ATTRS
+VALID_ATTRS = [
+    "actor",
+    "additional-directing",
+    "additional-photography",
+    "art-direction",
+    "assistant-director",
+    "avg-rating",
+    "camera-operator",
+    "casting",
+    "cast-list",
+    "choreography",
+    "cinematography",
+    "composer",
+    "costume-design",
+    "country",
+    "director",
+    "editor",
+    "executive-producer",
+    "genre",
+    "hairstyling",
+    "language",
+    "lighting",
+    "likes",
+    "makeup",
+    "mini-theme",
+    "original-writer",
+    "producer",
+    "production-design",
+    "set-decoration",
+    "songs",
+    "sound",
+    "special-effects",
+    "studio",
+    "stunts",
+    "theme",
+    "title-design",
+    "visual-effects",
+    "watches",
+    "writer"
+]
 
 
 def print_progress_bar(rows_now: int, total_rows: int, func_start_time: datetime):
@@ -90,7 +124,11 @@ def default_output_file():
     """
     Generate default output file name.
     """
-    url = [a for a in argv if a.startswith("http")][0]
+    url = [a for a in argv if a.startswith("http")]
+
+    if len(url) == 0:
+        return None
+
     return url.split("/")[-2]+".csv"   # use the list name in URL .csv
 
 
