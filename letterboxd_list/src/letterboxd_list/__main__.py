@@ -54,9 +54,10 @@ VALID_ATTRS = [
 
 def print_progress_bar(rows_now: int, total_rows: int, func_start_time: datetime):
     """
-    Handles progress bar output. Wi
+    Handles progress bar output. Will change width if terminal width changes
+    during runtime.
     """
-    output_width  = get_terminal_size(fallback=(80,25))[0]-37    # runs every call to adjust to terminal changes
+    output_width  = get_terminal_size(fallback=(80,25))[0]-37
     completion    = rows_now/total_rows
     bar_width_now = ceil(output_width * completion)
 
@@ -129,45 +130,54 @@ def default_output_file():
     if len(url) == 0:
         return None
 
-    return url.split("/")[-2]+".csv"   # use the list name in URL .csv
+    return url[0].split("/")[-2]+".csv"   # use the list name in URL .csv
 
 
 def parse_cli_args() -> dict:
     """
     Parses the arguments from the command line, returning a `dict` of the results.
     """
-    arg_parser = ArgumentParser(description="Collects requested film attributes from a \
+    ap = ArgumentParser(description="Collects requested film attributes from a \
         given Letterboxd list, and puts it in a CSV file (title and year are automatically \
         included, and rank if list is ranked)")
 
-    arg_parser.add_argument('-u','--list-url',
-                            type=str,
-                            required=True,
-                            help="The URL of the Letterboxd list."
-                            )
+    ap.add_argument('-u','--list-url',
+                    type=str,
+                    required=True,
+                    help="The URL of the Letterboxd list."
+                    )
 
-    arg_parser.add_argument('-a','--attributes',
-                            nargs='*',
-                            choices=VALID_ATTRS,
-                            default=[],
-                            required=False,
-                            help="The information about the film you'd like to add \
-                                to the CSV. You can add as many attributes as you \
-                                like from the list above, separated by spaces, or \
-                                none at all. If none are given, only titles and years \
-                                (and list rank, if applicable) are collected for the films."
-                            )
+    ap.add_argument('-a','--attributes',
+                    nargs='*',
+                    choices=VALID_ATTRS,
+                    default=[],
+                    required=False,
+                    help="The information about the film you'd like to add \
+                        to the CSV. You can add as many attributes as you \
+                        like from the list above, separated by spaces, or \
+                        none at all. If none are given, only titles and years \
+                        (and list rank, if applicable) are collected for the films."
+                    )
 
-    arg_parser.add_argument('-o', '--output-file',
-                            type=str,
-                            default=default_output_file(),
-                            required=False,
-                            help="CSV file to write the data to. Defaults to the \
-                                list name as it appears at the end of the URL with \
-                                '.csv' at the end, in the present directory."
-                            )
+    ap.add_argument('-o', '--output-file',
+                    type=str,
+                    default=default_output_file(),
+                    required=False,
+                    help="CSV file to write the data to. Defaults to the \
+                        list name as it appears at the end of the URL with \
+                        '.csv' at the end, in the present directory."
+                    )
 
-    return vars(arg_parser.parse_args())
+    ap.add_argument('--debug',
+                    default=False,
+                    action='store_true',
+                    required=False,
+                    help="This option lets the program crash fully, so a stack \
+                        trace will be printed to the console."
+                    )
+
+
+    return vars(ap.parse_args())
 
 
 def main():
@@ -176,18 +186,33 @@ def main():
     """
     cli_args = parse_cli_args()
 
-    try:
-        get_list_with_attrs(cli_args['list_url'],    # sends first argument as a list
-                            cli_args['attributes'],
-                            cli_args['output_file'])
-        print("\n\n\033[0;32mRetrival complete!\033[0m\n")
-    except lbl.RequestError as rqe:
-        print(f"There is an issue with the input of your request: {repr(rqe)}")
-    except lbl.HTTPError as hpe:
-        print(f"Network issue during runtime: {repr(hpe)}")
-    #except Exception as e:
-    #    print(f"Runtime error: {repr(e)}")
-    #    print("If you're seeing this, please submit an issue on GitHub.")
+    # a fairly rudimental "debug mode", I know
+    if cli_args['debug']:
+
+        try:
+            get_list_with_attrs(cli_args['list_url'],    # sends first argument as a list
+                                cli_args['attributes'],
+                                cli_args['output_file'])
+            print("\n\n\033[0;32mRetrival complete!\033[0m\n")
+        except lbl.RequestError as rqe:
+            print(f"There is an issue with the input of your request: {repr(rqe)}")
+        except lbl.HTTPError as hpe:
+            print(f"Network issue during runtime: {repr(hpe)}")
+    else:
+
+        try:
+            get_list_with_attrs(cli_args['list_url'],    # sends first argument as a list
+                                cli_args['attributes'],
+                                cli_args['output_file'])
+            print("\n\n\033[0;32mRetrival complete!\033[0m\n")
+        except lbl.RequestError as rqe:
+            print(f"There is an issue with the input of your request: {repr(rqe)}")
+        except lbl.HTTPError as hpe:
+            print(f"Network issue during runtime: {repr(hpe)}")
+        except Exception as e:
+            print(f"Runtime error: {repr(e)}")
+            print("If you're seeing this, please re-run the command you just ran ",
+                "with the `--debug` flag, and submit an issue on GitHub with the debug output.")
 
 
 if __name__ == "__main__":
