@@ -6,7 +6,26 @@ This repo has a CLI program that can convert any Letterboxd list into a CSV file
 
 ## Installation 
 
-### Linux/MacOS
+### Using `pipx`
+
+Installing with `pipx` is quite easy. Simply clone the repo and enter the directory:
+
+```
+git clone https//github.com/lmr97/letterboxd_get_list
+cd letterboxd_get_list
+```
+
+Then install:
+
+```
+pipx install ./letterboxd_list
+```
+
+Now you have the executable `lblist` available!
+
+### Without `pipx` (manually)
+
+#### Linux/MacOS
 
 The best way to install a Python CLI app is via a virtual environment, and link it to the default path for your shell.
 
@@ -37,7 +56,7 @@ The best way to install a Python CLI app is via a virtual environment, and link 
 
 **Warning**: since the executable is symlinked, you can't move the folder where you defined the virtual environment (`lb-venv` in the commands above), or else you'll get "command not found"-type errors. This, of course, can be fixed by moving the virtual environment folder back into where you made it.
 
-### Windows
+#### Windows
 
 Since this is a Python app, you can follow essentially the same steps on Windows as on Linux/MacOS (especially if you're using Git Bash), with a couple tweaks. Here's the process on Windows: 
 
