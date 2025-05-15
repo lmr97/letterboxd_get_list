@@ -1,9 +1,10 @@
 """
-Includes the classes used for get_list.py.
+Includes the central logic of the app encapsulated in the 
+`LetterboxdList` and `LetterboxdFilm` classes.
 """
 import re
 import copy
-from pycurl import Curl
+import pycurl
 from selectolax.parser import HTMLParser
 
 TABBED_ATTRS = ["actor",
@@ -43,7 +44,30 @@ TABBED_ATTRS = ["actor",
                 "writer"
                 ]
 
-class RequestError(Exception):
+
+def handle_http_err(status_code: int, url: str) -> None:
+    """
+    A common way to address HTTP errors when fetching letterboxd info.
+    """
+    if status_code != 200:
+        if 400 <= status_code < 500:
+            raise RequestError(f"\nInvalid URL: {url}\nStatus code: {status_code}\n")
+        if status_code >= 500:
+            raise HTTPError(
+                "Letterboxd server issue. Try again later.\nStatus code: {status_code}\n"
+                )
+        raise HTTPError(f"Unusual response from server; status code: {status_code}\n")
+
+
+def quote_enclose(string: str) -> str:
+    """
+    Defining this here to make the code more legible.
+    """
+    return "\""+string+"\""
+
+
+
+class RequestError(ValueError):
     """
     equivalent to 4xx errors
     """
@@ -67,6 +91,11 @@ class LetterboxdList:
     attribute. The object can also be iterated over like a list. In short, 
     a `LetterboxdList` can be treated like a standard `list`! Just without 
     element re-assignment, of course.
+
+    Note: ranking information is not kept, since it will always map one-to-one
+    to the index of the film in the list, and the list is not designed to be
+    modified. The `is_ranked` boolean allows the user to check and implement
+    display of list rank as they see fit. 
     """
     def __init__(self, url: str, sub_init=False):
         """
@@ -76,15 +105,18 @@ class LetterboxdList:
         is time-intestive, since each initialization depends on at least
         1 HTTP request.
         """
-
-        self._url  = url
-        self._curl = Curl()
+        self._url       = url
+        self._curl      = pycurl.Curl()
+        self._curl.setopt(pycurl.URL, self._url)
         self._curl.setopt(
-            self._curl.HTTPHEADER,
+            pycurl.HTTPHEADER,
             ["User-Agent: Application", "Connection: Keep-Alive"]
         )
-        self._curl.setopt(self._curl.URL, url)
+
         first_page_html = HTMLParser(self._curl.perform_rs())
+        resp_code       = self._curl.getinfo(pycurl.HTTP_CODE)
+        handle_http_err(resp_code, self._url)
+
         self._name      = first_page_html.css(".title-1")[0].text()
         self._length    = self._get_list_len(first_page_html)
 
@@ -136,7 +168,7 @@ class LetterboxdList:
             # now we do the rest, if there is any
             for current_page in range(2, self._num_pages+1): # exclude the first page, include last
 
-                self._curl.setopt(self._curl.URL, self._url+"page/"+str(current_page)+"/")
+                self._curl.setopt(pycurl.URL, self._url+"page/"+str(current_page)+"/")
                 listpage = self._curl.perform_rs()
                 tree = HTMLParser(listpage)
 
@@ -168,33 +200,30 @@ class LetterboxdList:
         if isinstance(idx, int):
             return self._films[idx]
 
-        # since Curl objects don't support deep copying, I need to delete that attribute
-        # before the copy, and recreate it after (for both self and the copy)
-        self._curl         = None
-        subset_list        = copy.deepcopy(self)
-        subset_list._films = subset_list._films[idx]
+        if isinstance(idx, slice):
+            # since Curl objects don't support deep copying, I need to delete that attribute
+            # before the copy, and recreate it after (for both self and the copy)
+            self._curl         = None
+            subset_list        = copy.deepcopy(self)
+            subset_list._films = subset_list._films[idx]
 
-        self._curl = Curl()
-        self._curl.setopt(
-            self._curl.HTTPHEADER,
-            ["User-Agent: Application", "Connection: Keep-Alive"]
-        )
-        subset_list._curl = self._curl
+            self._curl = pycurl.Curl()
+            self._curl.setopt(
+                pycurl.HTTPHEADER,
+                ["User-Agent: Application", "Connection: Keep-Alive"]
+            )
+            subset_list._curl = self._curl
 
-        return subset_list
+            return subset_list
+
+        raise TypeError("LetterboxdList objects can only be indexed with `int`s or `slice`s.")
+
 
     def __iter__(self) -> list:
         """
         Make the object iterable. Simply returns an iterater to the inner list.
         """
         return self._films.__iter__()
-
-    @property
-    def film_list(self) -> list:
-        """
-        This returns the inner list, as is; it may be partially initialized.
-        """
-        return self._films
 
     @property
     def is_ranked(self) -> bool:
@@ -271,51 +300,78 @@ class LetterboxdFilm:
     - Film page URL
     - Film page HTML
 
-    Any other film information is accessed through CSS-based searches on the HTML, implemented
-    as class methods.
-
-    It also takes an optional argument, `curl_session`, to use an existing PyCurl object.
+    Any other film information is accessed through CSS-based searches on the 
+    HTML, implemented as methods.
     """
-    def __init__(self, film_url: str, curl_session=None):
+    def __init__(self, film_url: str):
 
         self._url       = film_url
         insert_index    = film_url.find("/film")
         stats_url       = film_url[:insert_index] + "/csi" + film_url[insert_index:] + "stats/"
         self._stats_url = stats_url
 
-        if curl_session is None:
-            self.curl   = Curl()
-            self.curl.setopt(self.curl.HTTPHEADER, ["User-Agent: Application"])
-        else:
-            self.curl   = curl_session
+        self._curl      = pycurl.Curl()
+        self._curl.setopt(pycurl.HTTPHEADER, ["User-Agent: Application"])
 
-        self.curl.setopt(self.curl.URL, film_url)
+        self._curl.setopt(pycurl.URL, film_url)
 
-        resp_str        = self.curl.perform_rs()
-        status_code     = self.curl.getinfo(self.curl.RESPONSE_CODE)
+        resp_str        = self._curl.perform_rs()
+        status_code     = self._curl.getinfo(self._curl.RESPONSE_CODE)
+        handle_http_err(status_code, self._url)
 
-        if status_code != 200:
-            if 400 <= status_code < 500:
-                raise RequestError(f"\nInvalid URL: {film_url}\nStatus code: {status_code}\n")
-            if status_code >= 500:
-                raise HTTPError(
-                    "Letterboxd server issue. Try again later.\nStatus code: {status_code}\n"
-                    )
-            raise HTTPError(f"Unusual response from server; status code: {status_code}\n")
-
-        page_html        = HTMLParser(resp_str)
-        self._html       = page_html
-        self._title      = page_html.css("span.js-widont")[0].text()
-        year_el          = page_html.css("a[href^='/films/year/']")
+        page_html       = HTMLParser(resp_str)
+        self._html      = page_html
+        self._title     = page_html.css("span.js-widont")[0].text()
+        year_el         = page_html.css("a[href^='/films/year/']")
 
         if len(year_el) == 0:
-            self._year   = "((not found))"
+            self._year  = "(not listed)"
         else:
-            self._year   = year_el[0].text()
+            self._year  = year_el[0].text()
 
         # initialize on first time used
         self._stats_html = None
 
+    def __eq__(self, other) -> bool:
+        """
+        Since URLs are unique to each film, and all that meaningfully 
+        differentiates `LetterboxdFilm` objects is the film about which 
+        they hold info, I define two instances as identical if they 
+        share the same URL.
+        """
+        if isinstance(other, LetterboxdFilm):
+            return self._url == other._url
+
+        raise ValueError("Only LetterboxdFilm objects can be compared with each other using `==`.")
+
+
+    def __deepcopy__(self, memo):
+        """
+        Since Curl objects cannot be deep-copied (and their specific config data isn't
+        that important in this class), this class' deep copy has to be implemented 
+        such that everything *but* the Curl object member is copied. 
+        
+        It essentially get reinitialized for both the source and the copy, since 
+        it needs to be deleted for the duration of the copy process.
+
+        Discovered thanks to this StackOverflow answer: https://stackoverflow.com/a/56478412
+        """
+        obj_copy = type(self).__new__(self.__class__)  # skips calling __init__
+
+        # gotta do all this manually, to avoid infinite recursion
+        obj_copy._url       = copy.deepcopy(self._url,        memo)
+        obj_copy._stats_url = copy.deepcopy(self._stats_url,  memo)
+        obj_copy._title     = copy.deepcopy(self._title,      memo)
+        obj_copy._year      = copy.deepcopy(self._year,       memo)
+        obj_copy._html      = HTMLParser(self._html.html)
+        obj_copy._curl      = self._curl
+
+        if self._stats_html:
+            obj_copy._stats_html = HTMLParser(self._stats_html.html)
+        else:
+            obj_copy._stats_html = None
+
+        return obj_copy
 
 
     @property
@@ -335,25 +391,18 @@ class LetterboxdFilm:
     @property
     def year(self) -> str:
         """
-        Release year. Note: this will return ((not found)) for some
+        Release year. Note: this will return ((not listed)) for some
         if not all unreleased films listed on the site.
         """
         return self._year
 
-    @property
-    def page_html(self) -> str:
-        """
-        The full HTML (as a `str`) of the webpage for the film.
-        """
-        return self._html.html
 
-
-    def get_attrs_csv(self, attrs: list) -> str:
+    def get_attrs_csv(self, attrs: list | str) -> str:
         """
         Gets a list of attributes and formats it as a CSV line (without initial or 
         terminal commas). 
         
-        `dicts` and lists are formatted like so in the CSV string (not quote-enclosed):
+        `dicts` and lists are formatted like so in the CSV string (quote-enclosed, as shown):
         
         `dict`s:
         ```
@@ -365,36 +414,44 @@ class LetterboxdFilm:
         "element1; element2; element3; ..."
         ```
         """
-        attr_line = ""
+        # trivial case
+        if len(attrs) == 0:
+            return ""
 
+        # strings technically are accepted, but each character is treated as
+        # an independent attribute. So enforce convert the string to a list.
+        if isinstance(attrs, str):
+            attrs = [attrs]
+
+        attr_line = []
         for attr in attrs:
 
-            found_attr = "(not found)"              # default
+            found_attr = "(not listed)"              # default
             if attr in TABBED_ATTRS:
                 found_attr = self.get_tabbed_attribute(attr)
             else:
                 match attr:
-                    case "avg-rating":  found_attr = self.get_avg_rating()
-                    case "cast-list":   found_attr = self.get_casting()
-                    case "likes":       found_attr = self.get_likes()
-                    case "watches":     found_attr = self.get_watches()
+                    case "avg-rating": found_attr = self.get_avg_rating()
+                    case "cast-list":  found_attr = self.get_cast_list()
+                    case "likes":      found_attr = self.get_likes()
+                    case "watches":    found_attr = self.get_watches()
 
-            # convert list or dict to CSV-friendly format, if requested
             if   isinstance(found_attr, list):
-
-                found_attr = "; ".join(found_attr)  # separate list elements by ";", not ","
-                attr_line += "," + found_attr
+                # separate list elements by ";" not ","
+                found_attr = quote_enclose("; ".join(found_attr))
 
             elif isinstance(found_attr, dict):
 
-                found_attr = [f"{key}: {value}" for (key, value) in found_attr.items()]
-                found_attr = "; ".join(found_attr)
-                attr_line += "," + found_attr
+                if len(found_attr) == 0:
+                    found_attr = "(not listed)"      # empty dicts need to be handled explicitly
+                else:
+                    found_attr = [f"{key}: {value}" for (key, value) in found_attr.items()]
+                    found_attr = quote_enclose("; ".join(found_attr))
 
-            else:
-                attr_line += "," + str(found_attr)
+            # regardless
+            attr_line.append(str(found_attr))
 
-        return attr_line
+        return ",".join(attr_line)
 
 
     def get_tabbed_attribute(self, attribute: str) -> list:
@@ -404,35 +461,45 @@ class LetterboxdFilm:
         (except for the Releases tab, as this section follows a different 
         structure).
 
-        Will return `["(not found)"]` (a list with that string as its 
+        Will return `["(not listed)"]` (a list with that string as its 
         only element) if the attribute was not found for the given film, 
-        whether it was a valid attribute or not. An invalid argument warning is 
-        printed after a ValueError is raised if the attribute is not valid.
+        if it was a valid attribute. An invalid attribute passed to this
+        function causes a `ValueError` to be raised.
         
         Always use the full, singular form of the attribute you'd like, and replace each space
         with a hyphen, `-` (ASCII 45). 
 
-        See example below:
+        Attributes with multiple values are ordered the same way they appear on Letterboxd. 
+        The list of actors, for instance, preserves the billing order for the film. For 
+        languages, the primary language is listed first, and any other spoken or secondary 
+        languages are listed after.
 
-        ```
-        >>> film = LetterboxdFilm("https://letterboxd.com/film/rango")
-        >>> film.get_tabbed_attribute("assistant-director")
-        >>> ['Adam Somner', 'Ian Calip']
-        ```
+        A usage example:
+
+        .. code-block:: python
+        
+            >>> film = LetterboxdFilm("https://letterboxd.com/film/rango")
+            >>> film.get_tabbed_attribute("assistant-director")
+            ['Adam Somner', 'Ian Calip']
+
         """
 
         if attribute not in TABBED_ATTRS:
 
-            print("\nINVALID ARGUMENT ", "\"", attribute, "\" passed to ",
-                  "LetterboxdFilm.get_tabbed_attribute()\n",
-                  "\nEXPLANATION: This film information is either not in the HTML by that name,\n",
-                  "     or there is no method imlemented to retireve it yet. \n",
-                  "SUGGESTED ACTION: If it seems like the latter is the case, \n",
-                  "     please open up a GitHub issue and I will work on \n",
-                  "     implementing a method to retrieve the information. \n",
-                  "     You can also submit a pull request and implement it yourself.\n",
-                  sep="")
-            raise ValueError
+            # I'm building the error message like this to preserve the formatting.
+            err_msg = [
+                "\nINVALID ARGUMENT ", "\"", attribute, "\" passed to ",
+                "LetterboxdFilm.get_tabbed_attribute()\n",
+                "\nEXPLANATION: This film information is either not in the HTML by that name,\n",
+                "     or there is no method imlemented to retireve it yet. \n",
+                "SUGGESTED ACTION: If it seems like the latter is the case, \n",
+                "     please open up a GitHub issue and I will work on \n",
+                "     implementing a method to retrieve the information. \n",
+                "     You can also submit a pull request and implement it yourself.\n"
+                ]
+            err_msg = "".join(err_msg)
+
+            raise ValueError(err_msg)
 
         elements = self._html.css("a[href*='/" + attribute + "/']")
 
@@ -440,7 +507,7 @@ class LetterboxdFilm:
         # stripping out whitespace and commas
         attribute_list = [e.text().strip().replace(",","") for e in elements]
 
-        # Remove plural and singluar versions of occurrences 
+        # Remove plural and singluar versions of occurrences
         # of the attribute name in the list, because sometimes that happens
         attr_versions = [
             attribute,
@@ -452,35 +519,17 @@ class LetterboxdFilm:
             if av in attribute_list:
                 attribute_list.remove(av)
 
-        # return only distinct values, but still as a list
-        if attribute_list: 
-            return list(set(attribute_list))
+        # director appears twice on every page, so only return unique values,
+        # with order preserved (found here: https://stackoverflow.com/a/17016257)
+        if attribute == "director" and len(attribute_list) > 0:
+            return list(dict.fromkeys(attribute_list))
+
+        if len(attribute_list) > 0:
+            return attribute_list
 
         # the outcome whether the attribute was not valid or valid but not found for the film
-        return ["(not found)"]
+        return ["(not listed)"]
 
-
-    def get_directors(self) -> list:
-        """
-        For some films, there are multiple directors (e.g. The Matrix (1999)), 
-        so this method always returns a list.
-        """
-        return self.get_tabbed_attribute("director")
-    
-    def get_genres(self) -> list:
-        return self.get_tabbed_attribute("genre")
-    
-    def get_countries(self) -> list:
-        return self.get_tabbed_attribute("country")
-    
-    def get_studios(self) -> list:
-        return self.get_tabbed_attribute("studio")
-    
-    def get_actors(self) -> list:
-        return self.get_tabbed_attribute("actor")
-    
-    def get_themes(self) -> list:
-        return self.get_tabbed_attribute("theme")
 
     def get_avg_rating(self) -> float:
         """
@@ -494,13 +543,12 @@ class LetterboxdFilm:
             rating_element_title_parsed = rating_element_content.split(" ")
             avg_rating = float(rating_element_title_parsed[0])
 
-        return avg_rating
+        return float(avg_rating)
 
 
-    def get_casting(self) -> dict:
+    def get_cast_list(self) -> dict:
         """
-        Returns a `dict` with the actor names as keys, 
-        and character names as values.
+        Returns a `dict` with the actor names as keys, and character names as values.
 
         For casting director, use `get_tabbed_attribute("casting")`.
         """
@@ -509,13 +557,14 @@ class LetterboxdFilm:
         casting = {}
         for node in actor_nodes:
 
-            # sometimes, people link actors in reviews; gotta filter those out
-            try:
-                node.attrs['title']
-            except KeyError:
+            # Some films, like in documentaries, the "actors" are all appearing
+            # as themselves, not as a character. This catches those cases.
+            if 'title' not in node.attributes.keys():
+                casting[node.text()] = "Self"
                 continue
 
-            casting[node.text()] = node.attrs['title']
+            # double-quotes are reserved for the CSV formatting
+            casting[node.text().replace("\"", "'")] = node.attributes['title'].replace("\"", "'")
 
         return casting
 
@@ -523,13 +572,17 @@ class LetterboxdFilm:
     # Statistics section
 
     def _get_stats_html(self):
-        self.curl.setopt(self.curl.URL, self._stats_url)
-        stats_response   = self.curl.perform_rs()
+        self._curl.setopt(pycurl.URL, self._stats_url)
+        stats_response   = self._curl.perform_rs()
         stats_html       = HTMLParser(stats_response)
         self._stats_html = stats_html
 
+
     def get_watches(self) -> int:
-        if (not self._stats_html):
+        """
+        Return the amount of watches the film has on Lettereboxd.
+        """
+        if not self._stats_html:
             self._get_stats_html()
 
         watches_msg = self._stats_html.css("a.icon-watched")[0].attrs['title']
@@ -537,10 +590,13 @@ class LetterboxdFilm:
         watches_msg = watches_msg[:-8]                       # take out the " members"
         view_count  = watches_msg.replace(",", "")           # take out commas
 
-        return view_count
-    
+        return int(view_count)
+
     def get_likes(self) -> int:
-        if (not self._stats_html):
+        """
+        Return the amount of likes the film has on Letterboxd.
+        """
+        if not self._stats_html:
             self._get_stats_html()
 
         likes_msg = self._stats_html.css("a.icon-liked")[0].attrs['title']
@@ -548,5 +604,4 @@ class LetterboxdFilm:
         likes_msg = likes_msg[:-8]                         # take out the " members"
         likes_count = likes_msg.replace(",", "")           # take out commas
 
-        return likes_count
-
+        return int(likes_count)
