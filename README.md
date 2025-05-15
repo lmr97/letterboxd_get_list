@@ -23,6 +23,15 @@ pipx install ./letterboxd_list
 
 Now you have the executable `lblist` available!
 
+#### Getting updates (with `pipx`)
+
+All you have to do is navigate back to the folder where you cloned the repo, then run:
+
+```
+git pull
+pipx install ./letterboxd_list --force
+```
+
 ### Without `pipx` (manually)
 
 #### Linux/MacOS
@@ -85,7 +94,7 @@ Since this is a Python app, you can follow essentially the same steps on Windows
 6. Add this path to your shell's path. Here's [a great blog post](https://www.eukhost.com/kb/how-to-add-to-the-path-on-windows-10-and-windows-11/) on how to do so on Windows.
 
 
-## Getting updates
+#### Getting updates (manual install)
 
 Since updates are pushed here though GitHub, getting updates is easy: Simply navigate back to where you cloned the repository, then run:
 
