@@ -2,7 +2,9 @@
 *.html
 .DS_Store
 .vscode
-__pycache__
 archive/
 letterboxd_list/build/
 letterboxd_list/src/letterboxd_list.egg-info/
+!letterboxd_list/tests/*
+__pycache__
+.coverage
