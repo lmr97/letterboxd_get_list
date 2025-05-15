@@ -18,3 +18,10 @@ Homepage = "https://github.com/lmr97/letterboxd_get_list"
 
 [project.scripts]
 lblist = "letterboxd_list.__main__:main"
+
+[tool.pytest.ini_options]
+testpaths = [ "./tests/" ]
+
+[tool.coverage.run]
+source = [ "src/" ]
+omit = [ "tests/" ]
