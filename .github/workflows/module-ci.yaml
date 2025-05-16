@@ -1,4 +1,4 @@
-name: Test letterboxd_list module
+name: Test ./letterboxd_list module
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
     - name: Install pip
       run: python -m pip install --upgrade pip
     - name: Install module and testing dependencies
-      run: pip install --upgrade letterboxd_list[testing]
+      run: pip install --upgrade ./letterboxd_list[testing]
     - name: Test module
       run: pytest --cov --cov-report term-missing
   
@@ -45,7 +45,7 @@ jobs:
     - name: Install pip
       run: py -m pip install --upgrade pip
     - name: Install module and testing dependencies
-      run: py -m pip install --upgrade letterboxd_list[testing]
+      run: py -m pip install --upgrade .\letterboxd_list[testing]
     - name: Test module
       run: pytest --cov --cov-report term-missing
   
@@ -66,6 +66,6 @@ jobs:
     - name: Install pip
       run: python -m pip install --upgrade pip
     - name: Install module and testing dependencies
-      run: python -m pip install --upgrade letterboxd_list[testing]
+      run: python -m pip install --upgrade ./letterboxd_list[testing]
     - name: Test module
       run: pytest --cov --cov-report term-missing
