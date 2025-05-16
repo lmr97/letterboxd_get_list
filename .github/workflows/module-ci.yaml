@@ -2,7 +2,7 @@ name: Test ./letterboxd_list module
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "testing" ]
   pull_request:
     branches: [ "main" ]
 
