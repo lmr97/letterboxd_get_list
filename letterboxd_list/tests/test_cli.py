@@ -100,7 +100,7 @@ def test_cli_value_errors(capsys):
 
     bad_url_args    = ["lblist", "--list-url", "https://letterboxd.com/dialectica972/list/list-no-exist/", "--attributes", "director", "writer", "cast-list", "likes", "--output-file", "~/path/to/output.csv"]
     bad_attr_args   = ["lblist", "-u", "https://letterboxd.com/dialectica972/list/truly-random-films/", "--attributes", "director", "writer", "bingus", "likes", "--output-file", "~/path/to/output.csv"]
-    dir_output_args = ["lblist", "--list-url", "https://letterboxd.com/dialectica972/list/truly-random-films/", "--attributes", "director", "writer", "cast-list", "likes", "--output-file", "./"]
+    dir_output_args = ["lblist", "--list-url", "https://letterboxd.com/dialectica972/list/truly-random-films/", "--attributes", "director", "writer", "cast-list", "likes", "--output-file", "./imadir"]
     http_err_arg    = ["lblist", "-u", "https://httpstat.us/503", "--attributes", "director", "writer", "likes", "--output-file", "~/path/to/output.csv"]
 
     sys.argv = bad_url_args
@@ -167,7 +167,7 @@ def test_debug_run(capsys):
     (checked earlier).
     """
     bad_url_args    = ["lblist", "--debug", "--list-url", "https://letterboxd.com/dialectica972/list/list-no-exist/", "--attributes", "director", "writer", "cast-list", "likes", "--output-file", "~/path/to/output.csv"]
-    dir_output_args = ["lblist", "--debug", "--list-url", "https://letterboxd.com/dialectica972/list/truly-random-films/", "--attributes", "director", "writer", "cast-list", "likes", "--output-file", "./"]
+    dir_output_args = ["lblist", "--debug", "--list-url", "https://letterboxd.com/dialectica972/list/truly-random-films/", "--attributes", "director", "writer", "cast-list", "likes", "--output-file", "./imadir"]
     http_err_arg    = ["lblist", "--debug", "-u", "https://httpstat.us/503", "--attributes", "director", "writer", "likes", "--output-file", "~/path/to/output.csv"]
 
     sys.argv = bad_url_args

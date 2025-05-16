@@ -27,4 +27,4 @@ testpaths = [ "./tests/" ]
 
 [tool.coverage.run]
 source = [ "src/" ]
-omit = [ "tests/" ]
+omit = [ "*/tests/" ]
