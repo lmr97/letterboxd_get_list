@@ -12,7 +12,7 @@ RANDOM_FILMS  = lbc.LetterboxdList(
     "https://letterboxd.com/dialectica972/list/truly-random-films/", 
     sub_init=True
     )
-RAND_LIST_DF  = pd.read_csv("tests/random-list-test.csv")
+RAND_LIST_DF  = pd.read_csv("letterboxd_list/tests/random-list-test.csv")
 TEST_FILM     = lbc.LetterboxdFilm("https://letterboxd.com/film/stalker/")
 TEST_FILM_URL = "https://letterboxd.com/film/stalker/"
 
@@ -144,7 +144,7 @@ def test_csv_attrs():
     # but from a version without the stats (rating, likes, and watches)
     # since these change regularly, and are checked separately above.
     rand_list_raw = []
-    with open("tests/random-list-no-stats.csv", "r", encoding="utf-8") as rdr:
+    with open("letterboxd_list/tests/random-list-no-stats.csv", "r", encoding="utf-8") as rdr:
         rand_list_raw = rdr.readlines()
 
     no_stats_attrs = VALID_ATTRS
