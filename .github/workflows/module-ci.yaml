@@ -47,7 +47,7 @@ jobs:
     - name: Install module and testing dependencies
       run: py -m pip install --upgrade .\letterboxd_list[testing]
     - name: Test module
-      run: pytest --cov --cov-report term-missing
+      run: py -m pytest --cov --cov-report term-missing
   
   mac_test:
 
