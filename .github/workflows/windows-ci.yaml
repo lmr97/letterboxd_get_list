@@ -1,4 +1,4 @@
-name: Test ./letterboxd_list module
+name: Test module/CLI (Windows)
 
 on:
   push:
