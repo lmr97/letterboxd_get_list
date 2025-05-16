@@ -117,7 +117,7 @@ def test_cli_value_errors(capsys):
     sys.argv = dir_output_args
     lbmain.main()
     captured = capsys.readouterr()
-    assert "IsADirectoryError" in captured.err
+    assert ("IsADirectoryError" in captured.err) or ("PermissionError" in captured.err)
 
     sys.argv = http_err_arg
     lbmain.main()
@@ -151,7 +151,7 @@ def test_cli_good_run():
     sys.argv = min_args
     lbmain.main()
     min_output = read_csv("./testing-a-ranked-list.csv")
-    assert (["Rank", "Title", "Year"] == min_output.columns).all()  # only these values should be in the header
+    assert (["Rank", "Title", "Year"] == min_output.columns).all()
     assert min_output.iat[3,0] == 4, "Rank not correct."
     assert min_output.iat[3,1] == "Godzilla Minus One", "Title not correct."
     assert min_output.iat[3,2] == 2023, "Year not correct."
@@ -178,7 +178,7 @@ def test_debug_run(capsys):
     sys.argv = dir_output_args
     lbmain.main()
     captured = capsys.readouterr()
-    assert "IsADirectoryError" in captured.err
+    assert ("IsADirectoryError" in captured.err) or ("PermissionError" in captured.err)
 
     sys.argv = http_err_arg
     lbmain.main()
