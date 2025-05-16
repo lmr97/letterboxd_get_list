@@ -6,6 +6,7 @@ import re
 import copy
 import pycurl
 from selectolax.parser import HTMLParser
+from letterboxd_list.__main__ import VALID_ATTRS
 
 TABBED_ATTRS = ["actor",
                 "additional-directing",
@@ -422,6 +423,11 @@ class LetterboxdFilm:
         # an independent attribute. So enforce convert the string to a list.
         if isinstance(attrs, str):
             attrs = [attrs]
+
+        # looping through to show user which specific attribute is not valid
+        for attr in attrs:
+            if attr not in VALID_ATTRS:
+                raise ValueError(f"{attr} is not a valid attribute. ")
 
         attr_line = []
         for attr in attrs:
