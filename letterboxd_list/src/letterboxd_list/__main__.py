@@ -216,7 +216,7 @@ def main():
             print("It looks like you don't have permission to access the output file you want to ",
             "write to. If you're on Windows, your OS may have raised this error because the ",
             "output filename you chose is the name of a directory in the current working ",
-            f"directory.\nFull error: {pe}", file=sys.stderr)
+            f"directory.\nFull error: {repr(pe)}", file=sys.stderr)
     else:
         try:
             get_list_with_attrs(cli_args['list_url'],    # sends first argument as a list
@@ -234,7 +234,7 @@ def main():
             print("It looks like you don't have permission to access the output file you want to ",
             "write to. If you're on Windows, your OS may have raised this error because the ",
             "output filename you chose is the name of a directory in the current working ",
-            f"directory.\nFull error: {pe}", file=sys.stderr)
+            f"directory.\nFull error: {repr(pe)}", file=sys.stderr)
         except Exception as e:
             print(f"Runtime error: {repr(e)}", file=sys.stderr)
             print("If you're seeing this, please re-run the command you just ran ",
