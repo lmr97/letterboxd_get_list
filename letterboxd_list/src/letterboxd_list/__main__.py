@@ -9,49 +9,6 @@ from datetime import datetime
 from argparse import ArgumentParser
 import letterboxd_list.containers as lbl
 
-# Superset of lbl.TABBED_ATTRS
-VALID_ATTRS = [
-    "actor",
-    "additional-directing",
-    "additional-photography",
-    "art-direction",
-    "assistant-director",
-    "avg-rating",
-    "camera-operator",
-    "casting",
-    "cast-list",
-    "choreography",
-    "cinematography",
-    "composer",
-    "costume-design",
-    "country",
-    "director",
-    "editor",
-    "executive-producer",
-    "genre",
-    "hairstyling",
-    "language",
-    "lighting",
-    "likes",
-    "makeup",
-    "mini-theme",
-    "original-writer",
-    "producer",
-    "production-design",
-    "set-decoration",
-    "songs",
-    "sound",
-    "special-effects",
-    "studio",
-    "stunts",
-    "theme",
-    "title-design",
-    "visual-effects",
-    "watches",
-    "writer"
-]
-
-
 def print_progress_bar(rows_now: int, total_rows: int, func_start_time: datetime):
     """
     Handles progress bar output. Will change width if terminal width changes
@@ -160,7 +117,7 @@ def parse_cli_args() -> dict:
 
     ap.add_argument('-a','--attributes',
                     nargs='*',
-                    choices=VALID_ATTRS,
+                    choices=lbl.VALID_ATTRS,
                     default=[],
                     required=False,
                     help="The information about the film you'd like to add \

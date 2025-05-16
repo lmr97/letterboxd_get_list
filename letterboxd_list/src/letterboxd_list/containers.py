@@ -6,7 +6,47 @@ import re
 import copy
 import pycurl
 from selectolax.parser import HTMLParser
-from letterboxd_list.__main__ import VALID_ATTRS
+
+VALID_ATTRS = [
+    "actor",
+    "additional-directing",
+    "additional-photography",
+    "art-direction",
+    "assistant-director",
+    "avg-rating",
+    "camera-operator",
+    "casting",
+    "cast-list",
+    "choreography",
+    "cinematography",
+    "composer",
+    "costume-design",
+    "country",
+    "director",
+    "editor",
+    "executive-producer",
+    "genre",
+    "hairstyling",
+    "language",
+    "lighting",
+    "likes",
+    "makeup",
+    "mini-theme",
+    "original-writer",
+    "producer",
+    "production-design",
+    "set-decoration",
+    "songs",
+    "sound",
+    "special-effects",
+    "studio",
+    "stunts",
+    "theme",
+    "title-design",
+    "visual-effects",
+    "watches",
+    "writer"
+]
 
 TABBED_ATTRS = ["actor",
                 "additional-directing",
