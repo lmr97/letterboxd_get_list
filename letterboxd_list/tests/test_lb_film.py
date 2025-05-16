@@ -5,7 +5,7 @@ is accurate and consistent.
 import json
 import pytest
 import src.letterboxd_list.containers as lbc
-from src.letterboxd_list.__main__ import VALID_ATTRS
+from letterboxd_list.__main__ import VALID_ATTRS
 import pandas as pd     # needed for a good csv reader
 
 RANDOM_FILMS  = lbc.LetterboxdList(
