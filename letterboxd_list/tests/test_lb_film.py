@@ -112,10 +112,7 @@ def test_get_cast_list():
         if true_cast_str != "(not listed)":
             true_cast_str  = true_cast_str.replace("; ", "\", \"").replace(": ", "\": \"")
             true_cast_str  = "{\""+true_cast_str+"\"}"
-            try:
-                true_cast_dict = json.loads(true_cast_str)
-            except json.decoder.JSONDecodeError:
-                print(f"film \"{film.title}\" ({film.year}) failed JSON parse.")
+            true_cast_dict = json.loads(true_cast_str)
 
         assert true_cast_dict == test_cast_dict, \
             f"film \"{film.title}\" ({film.year}) failed assertion."
