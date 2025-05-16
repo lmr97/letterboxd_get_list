@@ -2,7 +2,7 @@
 This gets the elements of a list on Letterboxd
 """
 
-from sys import argv
+import sys
 from shutil import get_terminal_size
 from math import ceil
 from datetime import datetime
@@ -73,12 +73,24 @@ def print_progress_bar(rows_now: int, total_rows: int, func_start_time: datetime
             end = "\r")
 
 
+def to_capital_header(attr: str) -> str:
+    """
+    Capitalizes the first word in a given string,
+    and replaces the `-` with a space.
+    """
+    words    = attr.split("-")
+    init_cap = [w.capitalize() for w in words]
+    uc_attr  = " ".join(init_cap)
+    return uc_attr
+
+
 def get_list_with_attrs(letterboxd_list_url: str,
                         attrs: list,
                         output_file: str):
     """
     The central function for the app.
     """
+
     print()                         # to give the loading bar some room to breathe
     start_time = datetime.now()     # used in est time remaining in print_progress_bar()
     lb_list    = lbl.LetterboxdList(letterboxd_list_url)
@@ -88,9 +100,7 @@ def get_list_with_attrs(letterboxd_list_url: str,
         # finalize header
         header = "Title,Year"
         for attr in attrs:
-            words    = attr.split("-")
-            uc_words = " ".join([w.capitalize() for w in words])
-            header  += "," + uc_words
+            header  += "," + to_capital_header(attr)
 
         if lb_list.is_ranked:
             header = "Rank," + header
@@ -106,7 +116,8 @@ def get_list_with_attrs(letterboxd_list_url: str,
             title = "\"" + film.title + "\""            # rudimentary sanitizing
             file_row = title+","+film.year
 
-            file_row += film.get_attrs_csv(attrs)
+            if len(attrs) > 0:
+                file_row += "," + film.get_attrs_csv(attrs)
 
             if lb_list.is_ranked:
                 file_row = str(list_rank) + "," + file_row
@@ -125,7 +136,7 @@ def default_output_file():
     """
     Generate default output file name.
     """
-    url = [a for a in argv if a.startswith("http")]
+    url = [a for a in sys.argv if a.startswith("http")]
 
     if len(url) == 0:
         return None
@@ -188,32 +199,34 @@ def main():
 
     # a fairly rudimental "debug mode", I know
     if cli_args['debug']:
-
+        print("\033[0;33m  /// Running in debug mode /// \033[0m")
         try:
             get_list_with_attrs(cli_args['list_url'],    # sends first argument as a list
                                 cli_args['attributes'],
                                 cli_args['output_file'])
             print("\n\n\033[0;32mRetrival complete!\033[0m\n")
         except lbl.RequestError as rqe:
-            print(f"There is an issue with the input of your request: {repr(rqe)}")
+            print(f"There is an issue with the input of your request: {repr(rqe)}", file=sys.stderr)
         except lbl.HTTPError as hpe:
-            print(f"Network issue during runtime: {repr(hpe)}")
+            print(f"Network issue during runtime: {repr(hpe)}", file=sys.stderr)
+        except IsADirectoryError as iade:
+            print("The output file you've given is actually a directory within the current ",
+            f"working directory. Try again with another name!\nFull error: {repr(iade)}", file=sys.stderr)
     else:
-
         try:
             get_list_with_attrs(cli_args['list_url'],    # sends first argument as a list
                                 cli_args['attributes'],
                                 cli_args['output_file'])
             print("\n\n\033[0;32mRetrival complete!\033[0m\n")
         except lbl.RequestError as rqe:
-            print(f"There is an issue with the input of your request: {repr(rqe)}")
+            print(f"There is an issue with the input of your request: {repr(rqe)}", file=sys.stderr)
         except lbl.HTTPError as hpe:
-            print(f"Network issue during runtime: {repr(hpe)}")
+            print(f"Network issue during runtime: {repr(hpe)}", file=sys.stderr)
+        except IsADirectoryError as iade:
+            print("The output file you've given is actually a directory within the current ",
+            f"working directory. Try another name!\nFull error: {repr(iade)}", file=sys.stderr)
         except Exception as e:
-            print(f"Runtime error: {repr(e)}")
+            print(f"Runtime error: {repr(e)}", file=sys.stderr)
             print("If you're seeing this, please re-run the command you just ran ",
-                "with the `--debug` flag, and submit an issue on GitHub with the debug output.")
-
-
-if __name__ == "__main__":
-    main()
+                "with the `--debug` flag, and submit an issue on GitHub with the debug output.", 
+                file=sys.stderr)
