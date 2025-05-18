@@ -174,4 +174,5 @@ def test_csv_attrs():
                 test_no_quotes = test_val.replace("\"","")
 
                 # if this fails, then there IS a meaningful difference between cell values.
-                assert set(true_no_quotes.split("; ")) == set(test_no_quotes.split("; "))
+                assert set(true_no_quotes.split("; ")) == set(test_no_quotes.split("; ")), \
+                    f"film \"{film.title}\" ({film.year}) failed assertion."
