@@ -2,17 +2,19 @@
 Test the containers to make sure the information they get 
 is accurate and consistent.
 """
+from os.path import dirname, realpath
 import json
 import pytest
 import src.letterboxd_list.containers as lbc
-from src.letterboxd_list.containers import VALID_ATTRS
+from src.letterboxd_list import VALID_ATTRS
 import pandas as pd     # needed for a good csv reader
 
 RANDOM_FILMS  = lbc.LetterboxdList(
     "https://letterboxd.com/dialectica972/list/truly-random-films/", 
     sub_init=True
     )
-RAND_LIST_DF  = pd.read_csv("letterboxd_list/tests/random-list-test.csv")
+PATH_TO_TESTS = dirname(realpath(__file__))
+RAND_LIST_DF  = pd.read_csv(PATH_TO_TESTS+"/random-list-test.csv")
 TEST_FILM     = lbc.LetterboxdFilm("https://letterboxd.com/film/stalker/")
 TEST_FILM_URL = "https://letterboxd.com/film/stalker/"
 
@@ -141,7 +143,7 @@ def test_csv_attrs():
     # but from a version without the stats (rating, likes, and watches)
     # since these change regularly, and are checked separately above.
     rand_list_raw = []
-    with open("letterboxd_list/tests/random-list-no-stats.csv", "r", encoding="utf-8") as rdr:
+    with open(PATH_TO_TESTS+"/random-list-no-stats.csv", "r", encoding="utf-8") as rdr:
         rand_list_raw = rdr.readlines()
 
     no_stats_attrs = VALID_ATTRS
