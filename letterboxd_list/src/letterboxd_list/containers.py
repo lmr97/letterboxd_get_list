@@ -5,48 +5,8 @@ Includes the central logic of the app encapsulated in the
 import re
 import copy
 import pycurl
+from letterboxd_list import VALID_ATTRS
 from selectolax.parser import HTMLParser
-
-VALID_ATTRS = [
-    "actor",
-    "additional-directing",
-    "additional-photography",
-    "art-direction",
-    "assistant-director",
-    "avg-rating",
-    "camera-operator",
-    "casting",
-    "cast-list",
-    "choreography",
-    "cinematography",
-    "composer",
-    "costume-design",
-    "country",
-    "director",
-    "editor",
-    "executive-producer",
-    "genre",
-    "hairstyling",
-    "language",
-    "lighting",
-    "likes",
-    "makeup",
-    "mini-theme",
-    "original-writer",
-    "producer",
-    "production-design",
-    "set-decoration",
-    "songs",
-    "sound",
-    "special-effects",
-    "studio",
-    "stunts",
-    "theme",
-    "title-design",
-    "visual-effects",
-    "watches",
-    "writer"
-]
 
 TABBED_ATTRS = [
     "actor",
@@ -119,6 +79,14 @@ class HTTPError(Exception):
     To catch separate errors from 4xx ones
     """
 
+class ListTooLongError(RequestError):
+    """
+    Special error for when the Letterboxd list is 
+    over 10,000 films. This is not only an ungodly 
+    amount of films for a list, but also stress
+    the server's processing power, and take far too
+    long to convert for the user.
+    """
 
 class LetterboxdList:
     """
@@ -139,13 +107,15 @@ class LetterboxdList:
     modified. The `is_ranked` boolean allows the user to check and implement
     display of list rank as they see fit. 
     """
-    def __init__(self, url: str, sub_init=False):
+    def __init__(self, url: str, sub_init=False, max_length=-1):
         """
         Initialize a `LetterboxdList` object.
-        `sub_init` option allows you to initialize all URLs in the list 
-        into LetterboxdFilm objects. This is not done by default as it 
-        is time-intestive, since each initialization depends on at least
-        1 HTTP request.
+            `url`: the URL to the list.
+            `sub_init`: Initialize all URLs in the list into `LetterboxdFilm` 
+            objects. Warning: this is time-intestive, since each initialization 
+            depends on at least 1 HTTP request. Default: `False`.
+            `max_length`: Raise `ListTooLongError` error if list length exceeds
+            this value. Default: -1 (meaning "no limit").
         """
         self._url       = url
         self._curl      = pycurl.Curl()
@@ -161,6 +131,14 @@ class LetterboxdList:
 
         self._name      = first_page_html.css(".title-1")[0].text()
         self._length    = self._get_list_len(first_page_html)
+
+        if max_length > 0 and max_length < self._length:
+            raise ListTooLongError(
+                f"The list {self._name} at {self._url} "
+                "is over the max. specified length when this object"
+                f"was initialized (max_length={max_length}). "
+                "To remove any limits, set max_length=-1 at initialization."
+                )
 
         page_num_nodes  = first_page_html.css("li.paginate-page > a")
         self._num_pages = int(page_num_nodes[-1].text()) if len(page_num_nodes) > 0 else 1
