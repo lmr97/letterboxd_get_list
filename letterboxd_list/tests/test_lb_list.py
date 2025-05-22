@@ -29,6 +29,15 @@ def test_is_init():
 def test_page_num():
     assert LONG_LIST.num_pages == 16
 
+def test_list_too_long():
+
+    # there are 50 films in the list, so this should raise an error
+    with pytest.raises(lbc.ListTooLongError):
+        lb_list = lbc.LetterboxdList(
+            "https://letterboxd.com/dialectica972/list/truly-random-films/", 
+            max_length=40
+            )
+
 def test_indexing():
     true_titles = ["Christmas Waltz", "The Exterminating Angels", "The Novelist's Film"]
 
