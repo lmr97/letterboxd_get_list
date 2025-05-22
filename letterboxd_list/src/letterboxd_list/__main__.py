@@ -7,7 +7,7 @@ from shutil import get_terminal_size
 from math import ceil
 from datetime import datetime
 from argparse import ArgumentParser
-import letterboxd_list.containers as lbl
+import letterboxd_list.containers as lbc
 
 def print_progress_bar(rows_now: int, total_rows: int, func_start_time: datetime):
     """
@@ -50,7 +50,7 @@ def get_list_with_attrs(letterboxd_list_url: str,
 
     print()                         # to give the loading bar some room to breathe
     start_time = datetime.now()     # used in est time remaining in print_progress_bar()
-    lb_list    = lbl.LetterboxdList(letterboxd_list_url)
+    lb_list    = lbc.LetterboxdList(letterboxd_list_url)
 
     with open(output_file, "w", encoding="utf-8") as lbfile_writer:
 
@@ -68,7 +68,7 @@ def get_list_with_attrs(letterboxd_list_url: str,
         lines_written = 0
         for url in lb_list:
 
-            film = lbl.LetterboxdFilm(url)
+            film = lbc.LetterboxdFilm(url)
 
             title = "\"" + film.title + "\""            # rudimentary sanitizing
             file_row = title+","+film.year
@@ -117,7 +117,7 @@ def parse_cli_args() -> dict:
 
     ap.add_argument('-a','--attributes',
                     nargs='*',
-                    choices=lbl.VALID_ATTRS,
+                    choices=lbc.VALID_ATTRS,
                     default=[],
                     required=False,
                     help="The information about the film you'd like to add \
@@ -162,13 +162,14 @@ def main():
                                 cli_args['attributes'],
                                 cli_args['output_file'])
             print("\n\n\033[0;32mRetrival complete!\033[0m\n")
-        except lbl.RequestError as rqe:
+        except lbc.RequestError as rqe:
             print(f"There is an issue with the input of your request: {repr(rqe)}", file=sys.stderr)
-        except lbl.HTTPError as hpe:
+        except lbc.HTTPError as hpe:
             print(f"Network issue during runtime: {repr(hpe)}", file=sys.stderr)
         except IsADirectoryError as iade:
             print("The output file you've given is actually a directory within the current ",
-            f"working directory. Try again with another name!\nFull error: {repr(iade)}", file=sys.stderr)
+            f"working directory. Try again with another name!\nFull error: {repr(iade)}", 
+            file=sys.stderr)
         except PermissionError as pe:
             print("It looks like you don't have permission to access the output file you want to ",
             "write to. If you're on Windows, your OS may have raised this error because the ",
@@ -180,9 +181,9 @@ def main():
                                 cli_args['attributes'],
                                 cli_args['output_file'])
             print("\n\n\033[0;32mRetrival complete!\033[0m\n")
-        except lbl.RequestError as rqe:
+        except lbc.RequestError as rqe:
             print(f"There is an issue with the input of your request: {repr(rqe)}", file=sys.stderr)
-        except lbl.HTTPError as hpe:
+        except lbc.HTTPError as hpe:
             print(f"Network issue during runtime: {repr(hpe)}", file=sys.stderr)
         except IsADirectoryError as iade:
             print("The output file you've given is actually a directory within the current ",
