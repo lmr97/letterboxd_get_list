@@ -8,7 +8,7 @@ version = "1.3"
 authors = [
     { name = "Martin Reid", email = "lmreid1997@gmail.com" },
 ]
-description = "Gets and formats a given list from Letterboxd.com as a CSV file, with specified film attributes, utilizing scraping techniques."
+description = "Gets and formats a given list from Letterboxd.com as a CSV file, with specified film attributes, utilizing web scraping techniques."
 requires-python = ">=3.10"
 dependencies = [ "pycurl", "selectolax" ]
 license = "MIT"
@@ -22,9 +22,18 @@ Homepage = "https://github.com/lmr97/letterboxd_get_list"
 [project.scripts]
 lblist = "letterboxd_list.__main__:main"
 
+# static files
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+letterboxd_list = ["*.txt"]
+
+# testing config
 [tool.pytest.ini_options]
 testpaths = [ "./tests/" ]
+norecursedirs = [ ".pytest_cache", "build", ".github", "__pycache__" ]
 
+# coverage config
 [tool.coverage.run]
-source = [ "src/" ]
-omit = [ "tests/" ]
+source = [ "src/letterboxd_list/" ]
