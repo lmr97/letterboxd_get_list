@@ -419,8 +419,8 @@ class LetterboxdFilm:
 
     def get_attrs_csv(self, attrs: list | str) -> str:
         """
-        Gets a list of attributes and formats it as a CSV line (without initial or 
-        terminal commas). 
+        Gets a list of attributes and formats it as a CSV line. No initial or 
+        terminal commas are added nor is there a newline added at the end of the line.
         
         `dicts` and lists are formatted like so in the CSV string (quote-enclosed, as shown):
         

@@ -33,7 +33,8 @@ All you have to do is navigate back to the folder where you cloned the repo, the
 
 ```
 git pull
-pipx install ./letterboxd_list --force
+pipx uninstall letterboxd_list
+pipx install ./letterboxd_list
 ```
 
 ### Without `pipx` (manually)
