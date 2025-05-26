@@ -48,8 +48,8 @@ def get_list_with_attrs(letterboxd_list_url: str,
     The central function for the app.
     """
 
-    print()                         # to give the loading bar some room to breathe
     start_time = datetime.now()     # used in est time remaining in print_progress_bar()
+    print("\nCollecting films in list...\n")
     lb_list    = lbc.LetterboxdList(letterboxd_list_url)
 
     with open(output_file, "w", encoding="utf-8") as lbfile_writer:
