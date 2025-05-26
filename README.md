@@ -2,7 +2,7 @@
 ![Module/CLI Tests (MacOS)](https://github.com/lmr97/letterboxd_get_list/actions/workflows/mac-ci.yaml/badge.svg)
 ![Module/CLI Tests (Linux)](https://github.com/lmr97/letterboxd_get_list/actions/workflows/windows-ci.yaml/badge.svg)
 
-# Convert any Letterboxd List to CSVs!
+# Convert any Letterboxd List to a CSV!
 
 This repo has a CLI program that can convert any Letterboxd list into a CSV file, and get any desired information for each film in the list (title and year are added by default). It also has a `LetterboxdFilm` class definition (upon which `lblist` depends), which allows for quick access to film information off Letterboxd given the URL to the film.
 
@@ -10,9 +10,11 @@ This repo has a CLI program that can convert any Letterboxd list into a CSV file
 
 ## Installation 
 
-### Using `pipx`
+### Using `pipx` / `uv`
 
-Installing with `pipx` is quite easy. Simply clone the repo and enter the directory:
+Installing with `pipx` or [`uv`](https://github.com/astral-sh/uv) is quite easy. If you're using `uv`, the commands are identical, except `uv tool` is used where `pipx` is written below.
+
+Simply clone the repo and enter the directory:
 
 ```
 git clone https//github.com/lmr97/letterboxd_get_list
@@ -33,15 +35,55 @@ All you have to do is navigate back to the folder where you cloned the repo, the
 
 ```
 git pull
-pipx uninstall letterboxd_list
-pipx install ./letterboxd_list
+pipx upgrade letterboxd_list
 ```
 
-### Without `pipx` (manually)
+### With Poetry
+
+You'll still need to clone and enter the repo directory, but you'll have to go one directory deeper so that the `pyproject.toml` is in the working directory:
+
+```
+git clone https//github.com/lmr97/letterboxd_get_list
+cd letterboxd_get_list/letterboxd_list
+```
+
+Then you can install the package into Poetry's virtual environment:
+
+```
+poetry install
+```
+
+We still need to add the installed script to your shell's path, so it's accessible anywhere. To do this, run the following (on Linux):
+
+```
+echo "PATH=\${PATH}:$(poetry env info --path)/bin" >> ~/.bashrc
+```
+
+For adding the virtual envirtonemnt path to your shell's path in Windows, first print your Poetry environment to the terminal:
+
+```
+poetry env info --path
+```
+
+And then follow the steps in [this blog post](https://www.eukhost.com/kb/how-to-add-to-the-path-on-windows-10-and-windows-11/).
+
+#### Getting updates (with Poetry)
+
+Navigate back to `letterboxd_get_list/letterboxd_list` (again, the subdirectory with the `pyproject.toml` in it), and run:
+
+```
+git pull
+poetry update
+```
+
+
+### Manual install
 
 #### Linux/MacOS
 
 The best way to install a Python CLI app is via a virtual environment, and link it to the default path for your shell.
+
+The module setup is also compatible with Poetry, so if you'd prefer to use that instead, you are welcome to.
 
 1. Clone the respoitory:
 
@@ -85,7 +127,7 @@ Since this is a Python app, you can follow essentially the same steps on Windows
 3. Create a Python virtual environment (this step is pretty much identical to the Linux/MacOS):
 
     ```
-    python3 -m venv ./lb-venv   # forward slashes are valid in PowerShell!
+    py -m venv ./lb-venv   # forward slashes are valid in PowerShell!
     ```
 
 4. Install the `letterboxd_list` module in this virtual environment:
@@ -108,7 +150,8 @@ git pull
 ./lb-venv/bin/pip install --upgrade ./letterboxd_list
 ```
 
-Note the `--upgrade` flag in the second command; that's where it differs from the initial install command.
+
+## `lblist` CLI usage
 
 Now you can run the executable as `lblist`! Here's an example:
 
@@ -118,8 +161,7 @@ lblist --list-url https://letterboxd.com/crew/list/2024-highest-rated-films/ \
     --output-file 2024-highest-rated.csv
 ```
 
-
-## `lblist` CLI usage
+Here's the usage:
 
 ```
 lblist [-h] -u, --list-url LIST_URL
