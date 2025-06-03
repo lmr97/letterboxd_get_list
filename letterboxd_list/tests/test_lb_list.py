@@ -33,7 +33,7 @@ def test_list_too_long():
 
     # there are 50 films in the list, so this should raise an error
     with pytest.raises(lbc.ListTooLongError):
-        lb_list = lbc.LetterboxdList(
+        lbc.LetterboxdList(
             "https://letterboxd.com/dialectica972/list/truly-random-films/", 
             max_length=40
             )
