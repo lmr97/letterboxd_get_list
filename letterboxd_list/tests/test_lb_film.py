@@ -137,7 +137,7 @@ def test_csv_attrs():
     # cover the stat branches in the function, with margins of error
     # test values retrieved 26 May 2025, about 8:30pm (MDT).
     assert int(TEST_FILM.get_attrs_csv(["watches"])) - 407504 < 10000
-    assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 160815 < 1000
+    assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 162276 < 1000
 
     # since we're checking CSV formatting, we need the raw text data,
     # but from a version without the stats (rating, likes, and watches)
