@@ -605,12 +605,12 @@ class LetterboxdFilm:
 
     def get_watches(self) -> int:
         """
-        Return the amount of watches the film has on Lettereboxd.
+        Return the amount of watches the film has on Letterboxd.
         """
         if not self._stats_html:
             self._get_stats_html()
 
-        watches_msg = self._stats_html.css("a.icon-watched")[0].attrs['title']
+        watches_msg = self._stats_html.css("div.production-statistic.-watches")[0].attrs['aria-label']
         watches_msg = watches_msg[11:]                       # take out the "Watched by"
         watches_msg = watches_msg[:-8]                       # take out the " members"
         view_count  = watches_msg.replace(",", "")           # take out commas
@@ -624,7 +624,7 @@ class LetterboxdFilm:
         if not self._stats_html:
             self._get_stats_html()
 
-        likes_msg = self._stats_html.css("a.icon-liked")[0].attrs['title']
+        likes_msg = self._stats_html.css("div.production-statistic.-likes")[0].attrs['aria-label']
         likes_msg = likes_msg[9:]                          # take out the "Liked by"
         likes_msg = likes_msg[:-8]                         # take out the " members"
         likes_count = likes_msg.replace(",", "")           # take out commas
