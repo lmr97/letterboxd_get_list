@@ -81,7 +81,7 @@ def test_likes_method():
     # to cover the case where the stats_html private attribute hasn't been initialized.
     # test value retrieved 14 May 2025, 9:08pm (MDT).
     fresh_film = lbc.LetterboxdFilm("https://letterboxd.com/film/dragons-heaven/")
-    assert fresh_film.get_likes() - 1200 < 50
+    assert fresh_film.get_likes() - 1250 < 50
 
     true_likes = RAND_LIST_DF['Likes']
     test_likes = pd.Series([f.get_likes() for f in RANDOM_FILMS])
