@@ -95,8 +95,19 @@ def test_avg_rating():
     true_avg_ratings = RAND_LIST_DF['Avg Rating']
     test_avg_ratings = pd.Series([f.get_avg_rating() for f in RANDOM_FILMS])
 
-    # apparently these change enough to need a margin of error
-    assert (true_avg_ratings - test_avg_ratings < 0.02).all()
+    try:
+        # apparently these change enough to need a margin of error
+        assert (true_avg_ratings - test_avg_ratings < 0.02).all()
+    # If one of the films fails, the following will show which ones failed
+    # (Technically it will only show the FIRST failure, but I hope to be 
+    # maintaining this often enough for that to be the only one when
+    # I'm looking at it.)
+    except AssertionError:
+        
+        for (i, true_rating) in true_avg_ratings.items():
+            
+            assert (true_rating - test_avg_ratings[i]) < 0.02, \
+                f"fail on row {i+1}, with film {RAND_LIST_DF.iloc[i, 0]}"
 
 
 def test_get_cast_list():
