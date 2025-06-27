@@ -31,7 +31,7 @@ letterboxd_list = ["*.txt"]
 
 # testing config
 [tool.pytest.ini_options]
-testpaths = [ "./tests/" ]
+testpaths = [ "./letterboxd_list/tests/*" ]
 norecursedirs = [ ".pytest_cache", "build", ".github", "__pycache__" ]
 
 # coverage config
