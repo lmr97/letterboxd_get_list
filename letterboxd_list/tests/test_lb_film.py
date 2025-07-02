@@ -45,11 +45,11 @@ def test_http_errors():
         lbc.LetterboxdFilm("https://letterboxd.com/films/a-film-that-isnt-on-lb/")
 
     with pytest.raises(lbc.HTTPError):
-        lbc.LetterboxdFilm("https://httpstat.us/500")  # site designed to return 500 every time
+        lbc.LetterboxdFilm("https://the-internet.herokuapp.com/status_codes/500")  # site designed to return 500 every time
 
     # test unusual code
     with pytest.raises(lbc.HTTPError):
-        lbc.LetterboxdFilm("https://httpstat.us/303")
+        lbc.LetterboxdFilm("https://the-internet.herokuapp.com/status_codes/303")
 
 def test_bad_tabbed_attr():
     with pytest.raises(ValueError):
@@ -148,7 +148,7 @@ def test_csv_attrs():
     # cover the stat branches in the function, with margins of error
     # test values retrieved 26 May 2025, about 8:30pm (MDT).
     assert int(TEST_FILM.get_attrs_csv(["watches"])) - 407504 < 10000
-    assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 163418 < 1000
+    assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 164438 < 1000
 
     # since we're checking CSV formatting, we need the raw text data,
     # but from a version without the stats (rating, likes, and watches)
