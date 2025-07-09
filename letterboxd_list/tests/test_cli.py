@@ -101,7 +101,7 @@ def test_cli_value_errors(capsys):
     bad_url_args    = ["lblist", "--list-url", "https://letterboxd.com/dialectica972/list/list-no-exist/", "--attributes", "director", "writer", "cast-list", "likes", "--output-file", "~/path/to/output.csv"]
     bad_attr_args   = ["lblist", "-u", "https://letterboxd.com/dialectica972/list/truly-random-films/", "--attributes", "director", "writer", "bingus", "likes", "--output-file", "~/path/to/output.csv"]
     dir_output_args = ["lblist", "--list-url", "https://letterboxd.com/dialectica972/list/truly-random-films/", "--attributes", "director", "writer", "cast-list", "likes", "--output-file", "imadir"]
-    http_err_arg    = ["lblist", "-u", "https://httpstat.us/503", "--attributes", "director", "writer", "likes", "--output-file", "~/path/to/output.csv"]
+    http_err_arg    = ["lblist", "-u", "https://the-internet.herokuapp.com/status_codes/503", "--attributes", "director", "writer", "likes", "--output-file", "~/path/to/output.csv"]
 
     sys.argv = bad_url_args
     lbmain.main()
@@ -143,7 +143,7 @@ def test_cli_good_run():
     lbmain.main()
 
     output_df = read_csv("./test-file.csv")
-    assert (["Rank", "Title", "Year"] == output_df.columns[0:3]).all()
+    assert (["Rank", "Title", "Year", "Cast List", "Director",  "Likes", "Writer"] == output_df.columns).all()  # check alphabetization
     assert output_df.iat[3,0] == 4, "Rank not correct."
     assert output_df.iat[3,1] == "Godzilla Minus One", "Title not correct."
     assert output_df.iat[3,2] == 2023, "Year not correct."
@@ -168,7 +168,7 @@ def test_debug_run(capsys):
     """
     bad_url_args    = ["lblist", "--debug", "--list-url", "https://letterboxd.com/dialectica972/list/list-no-exist/", "--attributes", "director", "writer", "cast-list", "likes", "--output-file", "~/path/to/output.csv"]
     dir_output_args = ["lblist", "--debug", "--list-url", "https://letterboxd.com/dialectica972/list/truly-random-films/", "--attributes", "director", "writer", "cast-list", "likes", "--output-file", "imadir"]
-    http_err_arg    = ["lblist", "--debug", "-u", "https://httpstat.us/503", "--attributes", "director", "writer", "likes", "--output-file", "~/path/to/output.csv"]
+    http_err_arg    = ["lblist", "--debug", "-u", "https://the-internet.herokuapp.com/status_codes/503", "--attributes", "director", "writer", "likes", "--output-file", "~/path/to/output.csv"]
 
     sys.argv = bad_url_args
     lbmain.main()
