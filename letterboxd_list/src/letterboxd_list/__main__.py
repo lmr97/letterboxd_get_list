@@ -70,9 +70,9 @@ def get_batch_rows(
         file_row = title+","+film.year
 
         if len(attrs) > 0:
-            file_row += "," + film.get_attrs_csv(attrs) + "\n"
+            file_row += "," + film.get_attrs_csv(attrs)
 
-        batch_rows.append(file_row)
+        batch_rows.append(file_row + "\n")
 
         with rows_done.get_lock():
             rows_done.value += 1
@@ -95,8 +95,12 @@ def get_list_with_attrs(letterboxd_list_url: str,
     cpus      = os.cpu_count()
     rows_done = mp.Value('i', 0)
     tpool     = mp.Pool(processes=cpus, initializer=go_global, initargs=(rows_done,))
+    nbatches  = lb_list.length // cpus
     
-    batches   = [b for b in itertools.batched(lb_list, lb_list.length // cpus)]
+    if cpus > lb_list.length:
+        nbatches = 1
+    
+    batches   = [b for b in itertools.batched(lb_list, nbatches)]
     threads   = [
         tpool.apply_async(
             get_batch_rows, 
