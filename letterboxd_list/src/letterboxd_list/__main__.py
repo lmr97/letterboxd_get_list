@@ -2,12 +2,21 @@
 This gets the elements of a list on Letterboxd
 """
 
+import os
 import sys
+import multiprocessing as mp
+import itertools
 from shutil import get_terminal_size
 from math import ceil
 from datetime import datetime
 from argparse import ArgumentParser
 import letterboxd_list.containers as lbc
+
+
+def go_global(row_counter):
+    global rows_done
+    rows_done = row_counter
+
 
 def print_progress_bar(rows_now: int, total_rows: int, func_start_time: datetime):
     """
@@ -41,6 +50,37 @@ def to_capital_header(attr: str) -> str:
     return uc_attr
 
 
+# for parallelization
+def get_batch_rows(
+    batch: tuple, 
+    attrs: list, 
+    start_time: datetime, 
+    total_rows: int
+    ) -> list:
+    """
+    Since the iterable sent to this function is created by 
+    `itertools.batched`, it is a `list` of `LetterboxdFilms`, 
+    not a `LetterboxdList`, which is fine for our puposes here.
+    """
+    
+    batch_rows = []
+    for url in batch:
+        film = lbc.LetterboxdFilm(url)
+        title = "\"" + film.title + "\""            # rudimentary sanitizing
+        file_row = title+","+film.year
+
+        if len(attrs) > 0:
+            file_row += "," + film.get_attrs_csv(attrs) + "\n"
+
+        batch_rows.append(file_row)
+
+        with rows_done.get_lock():
+            rows_done.value += 1
+            print_progress_bar(rows_done.value, total_rows, start_time)
+
+    return batch_rows
+
+
 def get_list_with_attrs(letterboxd_list_url: str,
                         attrs: list,
                         output_file: str):
@@ -50,7 +90,29 @@ def get_list_with_attrs(letterboxd_list_url: str,
 
     start_time = datetime.now()     # used in est time remaining in print_progress_bar()
     print("\nCollecting films in list...\n")
-    lb_list    = lbc.LetterboxdList(letterboxd_list_url)
+    lb_list = lbc.LetterboxdList(letterboxd_list_url)
+
+    cpus      = os.cpu_count()
+    rows_done = mp.Value('i', 0)
+    tpool     = mp.Pool(processes=cpus, initializer=go_global, initargs=(rows_done,))
+    
+    batches   = [b for b in itertools.batched(lb_list, lb_list.length // cpus)]
+    threads   = [
+        tpool.apply_async(
+            get_batch_rows, 
+            [b, attrs, start_time, lb_list.length]
+        ) 
+        for b in batches
+    ]
+
+    csv_lines = []
+    for thread in threads:
+        csv_lines.extend(thread.get())
+
+    # easier to deal with ranking with the list all collected in one,
+    # versus making sure the right row number goes to the right row
+    if lb_list.is_ranked:
+        csv_lines = [f"{str(i+1)},{row}" for (i, row) in enumerate(csv_lines)]
 
     with open(output_file, "w", encoding="utf-8") as lbfile_writer:
 
@@ -61,31 +123,9 @@ def get_list_with_attrs(letterboxd_list_url: str,
 
         if lb_list.is_ranked:
             header = "Rank," + header
-
+        
         lbfile_writer.write(header+"\n")
-
-        list_rank     = 1       # in case needed
-        lines_written = 0
-        for url in lb_list:
-
-            film = lbc.LetterboxdFilm(url)
-
-            title = "\"" + film.title + "\""            # rudimentary sanitizing
-            file_row = title+","+film.year
-
-            if len(attrs) > 0:
-                file_row += "," + film.get_attrs_csv(attrs)
-
-            if lb_list.is_ranked:
-                file_row = str(list_rank) + "," + file_row
-                list_rank += 1
-
-            file_row += "\n"
-
-            lbfile_writer.write(file_row)
-
-            lines_written += 1
-            print_progress_bar(lines_written, lb_list.length, start_time)
+        lbfile_writer.writelines(csv_lines)
 
 
 # so the argparser will play nice with -h
