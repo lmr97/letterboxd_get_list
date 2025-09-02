@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6 - 2025-08-27
+
+## Added
+
+- Add multithreading for a massive performance increase (~10x speedup)
+
 ## 1.5 - 2025-06-09
 
 ### Fixed
