@@ -15,7 +15,7 @@ RANDOM_FILMS = lbc.LetterboxdList(
 
 
 def test_length():
-    assert LONG_LIST.length == 1515
+    assert LONG_LIST.length == 1523
 
 def test_name():
     assert LONG_LIST.name == "what is reality?"
@@ -39,7 +39,7 @@ def test_list_too_long():
             )
 
 def test_indexing():
-    true_titles = ["Christmas Waltz", "The Exterminating Angels", "The Novelist's Film"]
+    true_titles = ["The Exterminating Angels", "The Novelist's Film", "The Human Comedy"]
 
     # to make sure the case where stats_html has already been initialized
     # is covered in the test. See final line of test for follow-up.
@@ -52,7 +52,7 @@ def test_indexing():
         assert isinstance(film, lbc.LetterboxdFilm)
         assert true_titles[i] == film.title
 
-    assert RANDOM_FILMS[19].title == "The Woman in the Fifth"
+    assert RANDOM_FILMS[19].title == "Someone Great"
 
     # make sure the cool feature of Python indexing works
     assert RANDOM_FILMS[-1].title == "Story of Kale: When Someone's in Love"

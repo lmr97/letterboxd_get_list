@@ -45,11 +45,11 @@ def test_http_errors():
         lbc.LetterboxdFilm("https://letterboxd.com/films/a-film-that-isnt-on-lb/")
 
     with pytest.raises(lbc.HTTPError):
-        lbc.LetterboxdFilm("https://httpstat.us/500")  # site designed to return 500 every time
+        lbc.LetterboxdFilm("https://httpbin.org/status/500")  # site designed to return 500 every time
 
     # test unusual code
     with pytest.raises(lbc.HTTPError):
-        lbc.LetterboxdFilm("https://httpstat.us/303")
+        lbc.LetterboxdFilm("https://httpbin.org/status/303")
 
 def test_bad_tabbed_attr():
     with pytest.raises(ValueError):
@@ -81,7 +81,7 @@ def test_likes_method():
     # to cover the case where the stats_html private attribute hasn't been initialized.
     # test value retrieved 14 May 2025, 9:08pm (MDT).
     fresh_film = lbc.LetterboxdFilm("https://letterboxd.com/film/dragons-heaven/")
-    assert fresh_film.get_likes() - 1250 < 50
+    assert fresh_film.get_likes() - 1360 < 50
 
     true_likes = RAND_LIST_DF['Likes']
     test_likes = pd.Series([f.get_likes() for f in RANDOM_FILMS])
@@ -107,7 +107,7 @@ def test_avg_rating():
         for (i, true_rating) in true_avg_ratings.items():
             
             assert (true_rating - test_avg_ratings[i]) < 0.02, \
-                f"fail on row {i+1}, with film {RAND_LIST_DF.iloc[i, 0]}"
+                f"fail on row {i+2}, with film {RAND_LIST_DF.iloc[i, 0]}"
 
 
 def test_get_cast_list():
@@ -146,9 +146,9 @@ def test_csv_attrs():
         TEST_FILM.get_attrs_csv("bingus")
 
     # cover the stat branches in the function, with margins of error
-    # test values retrieved 26 May 2025, about 8:30pm (MDT).
-    assert int(TEST_FILM.get_attrs_csv(["watches"])) - 407504 < 10000
-    assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 163418 < 1000
+    # test values retrieved 29 Aug 2025
+    assert int(TEST_FILM.get_attrs_csv(["watches"])) - 433086 < 10000
+    assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 171224 < 1000
 
     # since we're checking CSV formatting, we need the raw text data,
     # but from a version without the stats (rating, likes, and watches)
