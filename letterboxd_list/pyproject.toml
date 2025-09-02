@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "letterboxd_list"
-version = "1.5"
+version = "1.6.0"
 authors = [
     { name = "Martin Reid", email = "lmreid1997@gmail.com" },
 ]
@@ -31,7 +31,7 @@ letterboxd_list = ["*.txt"]
 
 # testing config
 [tool.pytest.ini_options]
-testpaths = [ "./letterboxd_list/tests/*" ]
+testpaths = [ "./tests" ]
 norecursedirs = [ ".pytest_cache", "build", ".github", "__pycache__" ]
 
 # coverage config
