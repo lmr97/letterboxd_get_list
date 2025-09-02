@@ -143,7 +143,7 @@ def test_cli_good_run():
     lbmain.main()
 
     output_df = read_csv("./test-file.csv")
-    assert (["Rank", "Title", "Year"] == output_df.columns[0:3]).all()
+    assert (["Rank", "Title", "Year", "Cast List", "Director", "Likes", "Writer"] == output_df.columns).all()  # check alphabetization
     assert output_df.iat[3,0] == 4, "Rank not correct."
     assert output_df.iat[3,1] == "Godzilla Minus One", "Title not correct."
     assert output_df.iat[3,2] == 2023, "Year not correct."

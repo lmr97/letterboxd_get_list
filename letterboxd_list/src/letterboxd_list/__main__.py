@@ -118,6 +118,8 @@ def get_list_with_attrs(letterboxd_list_url: str,
 
         # finalize header
         header = "Title,Year"
+        attrs.sort()            # alphabetize
+        
         for attr in attrs:
             header  += "," + to_capital_header(attr)
 
