@@ -8,4 +8,3 @@ letterboxd_list/src/letterboxd_list.egg-info/
 !letterboxd_list/tests/*
 __pycache__
 .coverage
-!test-file.csv
