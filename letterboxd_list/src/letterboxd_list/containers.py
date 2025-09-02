@@ -56,7 +56,7 @@ def handle_http_err(status_code: int, url: str) -> None:
             raise RequestError(f"\nInvalid URL: {url}\nStatus code: {status_code}\n")
         if status_code >= 500:
             raise HTTPError(
-                "Letterboxd server issue. Try again later.\nStatus code: {status_code}\n"
+                f"Letterboxd server issue. Try again later.\nStatus code: {status_code}\n"
                 )
         raise HTTPError(f"Unusual response from server; status code: {status_code}\n")
 
