@@ -154,6 +154,7 @@ You can find this list in `valid-lb-attrs.txt`.
 
 Additional notes about output formatting:
 
+* After Title and Year, the columns are arranged alphabetically (see example below)
 * For ranked lists, the rank is added as the first column. For non-ranked lists, this column is omitted.
 * For films where a given attribute is not found on the page, the program writes "Not listed" in that cell (it does not crash).
 * If an attribute has multiple values to it (e.g. the film has 3 directors), each element in that attribute will be separated by a `;`. In the case of casting, the key-value pairs (see `get_casting()` heading below) will be separated by a semicolon as well, with the key separated from the value by a colon as is convention.
@@ -162,12 +163,12 @@ Additional notes about output formatting:
 A loading bar will display to show the progress, and once the program has written to the output file, it will print `Retrieval complete!` and terminate. The first few lines of the CSV that results from the above command is shown below:
 
 ```
-Rank,Title,Year,Director,Watches,Avg-rating
-1,"Dune: Part Two",2024,Denis Villeneuve,2744519,4.4
-2,"I'm Still Here",2024,Walter Salles,592017,4.33
-3,"How to Make Millions Before Grandma Dies",2024,Pat Boonnitipat,113632,4.33
-4,"Look Back",2024,Kiyotaka Oshiyama,278852,4.27
-5,"Sing Sing",2023,Greg Kwedar,225983,4.28
+Rank,Title,Year,Avg Rating,Director,Watches
+1,"Dune: Part Two",2024,"Denis Villeneuve",3177993,4.39
+2,"I'm Still Here",2024,"Walter Salles",715318,4.33
+3,"How to Make Millions Before Grandma Dies",2024,"Pat Boonnitipat",206210,4.34
+4,"Look Back",2024,"Kiyotaka Oshiyama",352015,4.26
+5,"Sing Sing",2023,"Greg Kwedar",299292,4.3
 ...
 ```
 
