@@ -1,6 +1,12 @@
 # Changelog
 
-## 1.6 - 2025-08-27
+## 1.6.1 - 2025-09-02
+
+## Fixed
+
+- Fix misalignment of header column and data
+
+## 1.6.0 - 2025-09-01
 
 ## Added
 
