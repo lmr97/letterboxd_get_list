@@ -88,19 +88,21 @@ def get_list_with_attrs(letterboxd_list_url: str,
     The central function for the app.
     """
 
-    start_time = datetime.now()     # used in est time remaining in print_progress_bar()
     print("\nCollecting films in list...\n")
+    start_time = datetime.now()     # used in est time remaining in print_progress_bar()
+    attrs.sort()                    # alphabetize
     lb_list = lbc.LetterboxdList(letterboxd_list_url)
 
-    cpus      = os.cpu_count()
-    rows_done = mp.Value('i', 0)
-    tpool     = mp.Pool(processes=cpus, initializer=go_global, initargs=(rows_done,))
-    nbatches  = lb_list.length // cpus
+    cpus       = os.cpu_count()
+    rows_done  = mp.Value('i', 0)
+    tpool      = mp.Pool(processes=cpus, initializer=go_global, initargs=(rows_done,))
+    batch_size = lb_list.length // cpus
     
+    # don't multithread for small lists
     if cpus > lb_list.length:
-        nbatches = 1
+        batch_size = lb_list.length
     
-    batches   = [b for b in itertools.batched(lb_list, nbatches)]
+    batches   = [b for b in itertools.batched(lb_list, batch_size)]
     threads   = [
         tpool.apply_async(
             get_batch_rows, 
@@ -122,7 +124,6 @@ def get_list_with_attrs(letterboxd_list_url: str,
 
         # finalize header
         header = "Title,Year"
-        attrs.sort()            # alphabetize
         
         for attr in attrs:
             header  += "," + to_capital_header(attr)

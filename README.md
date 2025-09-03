@@ -164,11 +164,11 @@ A loading bar will display to show the progress, and once the program has writte
 
 ```
 Rank,Title,Year,Avg Rating,Director,Watches
-1,"Dune: Part Two",2024,"Denis Villeneuve",3177993,4.39
-2,"I'm Still Here",2024,"Walter Salles",715318,4.33
-3,"How to Make Millions Before Grandma Dies",2024,"Pat Boonnitipat",206210,4.34
-4,"Look Back",2024,"Kiyotaka Oshiyama",352015,4.26
-5,"Sing Sing",2023,"Greg Kwedar",299292,4.3
+1,"Dune: Part Two",2024,4.39,"Denis Villeneuve",3178016
+2,"I'm Still Here",2024,4.33,"Walter Salles",715324
+3,"How to Make Millions Before Grandma Dies",2024,4.34,"Pat Boonnitipat",206211
+4,"Look Back",2024,4.26,"Kiyotaka Oshiyama",352017
+5,"Sing Sing",2023,4.3,"Greg Kwedar",299293
 ...
 ```
 
