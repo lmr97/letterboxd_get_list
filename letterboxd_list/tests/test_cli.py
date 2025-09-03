@@ -136,21 +136,22 @@ def test_cli_good_run():
     
     The accuracy is checked by the other unit tests for the classes, separately.
     """
-    normal_val_args = ["lblist", "--list-url", "https://letterboxd.com/dialectica972/list/testing-a-ranked-list/", "--attributes", "director", "writer", "cast-list", "likes", "--output-file", "./test-file.csv"]
+    normal_val_args = ["lblist", "--list-url", "https://letterboxd.com/dialectica972/list/testing-a-ranked-list/", "--attributes", "director", "writer", "editor", "cast-list", "likes", "--output-file", "./test-file.csv"]
     min_args        = ["lblist", "-u", "https://letterboxd.com/dialectica972/list/testing-a-ranked-list/"]
     
     sys.argv = normal_val_args
     lbmain.main()
 
-    output_df = read_csv("./test-file.csv")
-    assert (["Rank", "Title", "Year", "Cast List", "Director", "Likes", "Writer"] == output_df.columns).all()  # check alphabetization
+    output_df = read_csv("test-file.csv")
+    assert (["Rank", "Title", "Year", "Cast List", "Director", "Editor", "Likes", "Writer"] == output_df.columns).all()  # check alphabetization
     assert output_df.iat[3,0] == 4, "Rank not correct."
     assert output_df.iat[3,1] == "Godzilla Minus One", "Title not correct."
     assert output_df.iat[3,2] == 2023, "Year not correct."
+    assert output_df.iat[2,5] == "Ned Bastille", "Editor not correct."   # test column alignment in CLI
 
     sys.argv = min_args
     lbmain.main()
-    min_output = read_csv("./testing-a-ranked-list.csv")
+    min_output = read_csv("testing-a-ranked-list.csv")
     assert (["Rank", "Title", "Year"] == min_output.columns).all()
     assert min_output.iat[3,0] == 4, "Rank not correct."
     assert min_output.iat[3,1] == "Godzilla Minus One", "Title not correct."
