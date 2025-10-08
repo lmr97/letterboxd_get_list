@@ -147,8 +147,8 @@ def test_csv_attrs():
 
     # cover the stat branches in the function, with margins of error
     # test values retrieved 29 Aug 2025
-    assert int(TEST_FILM.get_attrs_csv(["watches"])) - 433086 < 10000
-    assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 171224 < 1000
+    assert int(TEST_FILM.get_attrs_csv(["watches"])) - 443354 < 10000
+    assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 175230 < 1000
 
     # since we're checking CSV formatting, we need the raw text data,
     # but from a version without the stats (rating, likes, and watches)
@@ -182,10 +182,11 @@ def test_csv_attrs():
             # divide rows into cells, and check each cell for a difference in content.
             true_row = true_row.replace("\n", "")
             test_row = test_row.replace("\n", "")
-            for true_val, test_val in zip(true_row.split(","), test_row.split(",")):
+            for j, (true_val, test_val) in enumerate(zip(true_row.split(","), test_row.split(","))):
                 true_no_quotes = true_val.replace("\"","")
                 test_no_quotes = test_val.replace("\"","")
 
                 # if this fails, then there IS a meaningful difference between cell values.
                 assert set(true_no_quotes.split("; ")) == set(test_no_quotes.split("; ")), \
-                    f"film \"{film.title}\" ({film.year}) failed assertion."
+                    f"film \"{film.title}\" ({film.year}) failed assertion for '{no_stats_attrs[j-2]}' attribute."
+                    # -1 for title and -1 year, neither in `no_stats_attrs`
