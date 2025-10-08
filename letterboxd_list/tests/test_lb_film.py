@@ -3,6 +3,7 @@ Test the containers to make sure the information they get
 is accurate and consistent.
 """
 from os.path import dirname, realpath
+import csv
 import json
 import pytest
 import src.letterboxd_list.containers as lbc
@@ -150,17 +151,16 @@ def test_csv_attrs():
     assert int(TEST_FILM.get_attrs_csv(["watches"])) - 443354 < 10000
     assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 175230 < 1000
 
-    # since we're checking CSV formatting, we need the raw text data,
-    # but from a version without the stats (rating, likes, and watches)
-    # since these change regularly, and are checked separately above.
-    rand_list_raw = []
-    with open(PATH_TO_TESTS+"/random-list-no-stats.csv", "r", encoding="utf-8") as rdr:
-        rand_list_raw = rdr.readlines()
+    rand_list_no_stats = RAND_LIST_DF.drop(["Watches", "Likes", "Avg Rating"], axis=1)
+    rlns_cols          = rand_list_no_stats.columns
+    rand_list_raw      = rand_list_no_stats.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC).split("\n")
+    
+    no_stats_cols = VALID_ATTRS
+    no_stats_cols.remove("watches")
+    no_stats_cols.remove("likes")
+    no_stats_cols.remove("avg-rating")
+    no_stats_cols.sort()                # to reflect sortation in the test-file
 
-    no_stats_attrs = VALID_ATTRS
-    no_stats_attrs.remove("watches")
-    no_stats_attrs.remove("likes")
-    no_stats_attrs.remove("avg-rating")
     for i, film in enumerate(RANDOM_FILMS):
         # there are 51 rows in the file, and only 50 films, will not raise OOB error
         true_row = rand_list_raw[i+1]
@@ -168,9 +168,9 @@ def test_csv_attrs():
             [
                 lbc.quote_enclose(film.title),
                 film.year,
-                film.get_attrs_csv(no_stats_attrs)
+                film.get_attrs_csv(no_stats_cols)
             ]
-        ) + "\n"
+        )
 
         # Sometimes the rows are not exactly identical only because the order of some names
         # in attributes may change on Letterboxd.com itself. This means that the test values
@@ -188,5 +188,4 @@ def test_csv_attrs():
 
                 # if this fails, then there IS a meaningful difference between cell values.
                 assert set(true_no_quotes.split("; ")) == set(test_no_quotes.split("; ")), \
-                    f"film \"{film.title}\" ({film.year}) failed assertion for '{no_stats_attrs[j-2]}' attribute."
-                    # -1 for title and -1 year, neither in `no_stats_attrs`
+                    f"film \"{film.title}\" ({film.year}) failed assertion for '{rlns_cols[j]}' attribute."
