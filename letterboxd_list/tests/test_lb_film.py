@@ -80,9 +80,9 @@ def test_watches_method():
 def test_likes_method():
 
     # to cover the case where the stats_html private attribute hasn't been initialized.
-    # test value retrieved 14 May 2025, 9:08pm (MDT).
+    # test value retrieved 20 October 2025, 8:58pm (MDT).
     fresh_film = lbc.LetterboxdFilm("https://letterboxd.com/film/dragons-heaven/")
-    assert fresh_film.get_likes() - 1360 < 50
+    assert fresh_film.get_likes() - 1412 < 50
 
     true_likes = RAND_LIST_DF['Likes']
     test_likes = pd.Series([f.get_likes() for f in RANDOM_FILMS])
@@ -147,9 +147,8 @@ def test_csv_attrs():
         TEST_FILM.get_attrs_csv("bingus")
 
     # cover the stat branches in the function, with margins of error
-    # test values retrieved 29 Aug 2025
-    assert int(TEST_FILM.get_attrs_csv(["watches"])) - 443354 < 10000
-    assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 175230 < 1000
+    assert int(TEST_FILM.get_attrs_csv(["watches"])) - 447000 < 10000
+    assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 177000 < 1000
 
     rand_list_no_stats = RAND_LIST_DF.drop(["Watches", "Likes", "Avg Rating"], axis=1)
     rlns_cols          = rand_list_no_stats.columns
