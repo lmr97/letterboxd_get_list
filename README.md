@@ -1,6 +1,6 @@
 ![Module/CLI Tests (Linux)](https://github.com/lmr97/letterboxd_get_list/actions/workflows/linux-ci.yaml/badge.svg)
 ![Module/CLI Tests (MacOS)](https://github.com/lmr97/letterboxd_get_list/actions/workflows/mac-ci.yaml/badge.svg)
-![Module/CLI Tests (Linux)](https://github.com/lmr97/letterboxd_get_list/actions/workflows/windows-ci.yaml/badge.svg)
+
 
 # Convert any Letterboxd List to a CSV!
 
