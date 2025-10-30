@@ -15,7 +15,7 @@ RANDOM_FILMS = lbc.LetterboxdList(
 
 
 def test_length():
-    assert LONG_LIST.length == 1527
+    assert LONG_LIST.length == 1528
 
 def test_name():
     assert LONG_LIST.name == "what is reality?"
