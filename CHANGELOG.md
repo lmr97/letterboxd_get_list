@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.3 - 2025-12-04
+
+### Fixed
+
+- Fix bug where `IsADirectory` error is raised only after all films have been collected
+
 ## 1.6.2 - 2025-12-04
 
 ### Added
