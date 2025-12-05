@@ -1,14 +1,20 @@
 # Changelog
 
+## 1.6.2 - 2025-12-04
+
+### Added
+
+- Add more robust error handling, especially to handle `None`s
+
 ## 1.6.1 - 2025-09-02
 
-## Fixed
+### Fixed
 
 - Fix misalignment of header column and data
 
 ## 1.6.0 - 2025-09-01
 
-## Added
+### Added
 
 - Add multithreading for a massive performance increase (~10x speedup)
 

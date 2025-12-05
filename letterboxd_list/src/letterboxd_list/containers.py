@@ -5,6 +5,7 @@ Includes the central logic of the app encapsulated in the
 import re
 import copy
 import pycurl
+from collections.abc import Iterable, Iterator
 from letterboxd_list import VALID_ATTRS
 from selectolax.parser import HTMLParser
 
@@ -88,223 +89,11 @@ class ListTooLongError(RequestError):
     long to convert for the user.
     """
 
-class LetterboxdList:
+class ChangedLetterboxdDOM(ValueError):
     """
-    Composition of `LetterboxdFilm`s, each of which are lazily initialized.
-    Until they are, they exist as a `list` of URL strings. When needed,
-    they are evaluated on-demand with the `.init_film(n)` function, which 
-    initialized the nth film, and replaces its URL string in the list with
-    a `LetterboxdFilm` object initialized with that URL.
-
-    The inner `list` is accesible via indexing both with `int`s, and slices.
-    Since it is intended to correspond to a static webpage, it is a read-only 
-    attribute. The object can also be iterated over like a list. In short, 
-    a `LetterboxdList` can be treated like a standard `list`! Just without 
-    element re-assignment, of course.
-
-    Note: ranking information is not kept, since it will always map one-to-one
-    to the index of the film in the list, and the list is not designed to be
-    modified. The `is_ranked` boolean allows the user to check and implement
-    display of list rank as they see fit. 
+    Is to be raised when certain elements are no longer at the same place
+    in the relevant HTML document on Letterboxd.
     """
-    def __init__(self, url: str, sub_init=False, max_length=-1):
-        """
-        Initialize a `LetterboxdList` object.
-            `url`: the URL to the list.
-            `sub_init`: Initialize all URLs in the list into `LetterboxdFilm` 
-            objects. Warning: this is time-intestive, since each initialization 
-            depends on at least 1 HTTP request. Default: `False`.
-            `max_length`: Raise `ListTooLongError` error if list length exceeds
-            this value. Default: -1 (meaning "no limit").
-        """
-        self._url       = url
-        self._curl      = pycurl.Curl()
-        self._curl.setopt(pycurl.URL, self._url)
-        self._curl.setopt(
-            pycurl.HTTPHEADER,
-            ["User-Agent: Application", "Connection: Keep-Alive"]
-        )
-
-        first_page_html = HTMLParser(self._curl.perform_rs())
-        resp_code       = self._curl.getinfo(pycurl.HTTP_CODE)
-        handle_http_err(resp_code, self._url)
-
-        self._name      = first_page_html.css(".title-1")[0].text()
-        self._length    = self._get_list_len(first_page_html)
-
-        if max_length > 0 and max_length < self._length:
-            raise ListTooLongError(
-                f"The list {self._name} at {self._url} "
-                "is over the max. specified length when this object"
-                f"was initialized (max_length={max_length}). "
-                "To remove any limits, set max_length=-1 at initialization."
-                )
-
-        page_num_nodes  = first_page_html.css("li.paginate-page > a")
-        self._num_pages = int(page_num_nodes[-1].text()) if len(page_num_nodes) > 0 else 1
-        self._is_ranked = bool(first_page_html.css("p.list-number"))
-
-        self._films     = self._get_urls(first_page_html)
-
-        if sub_init:
-            for n in range(self._length):
-                self.init_film(n)
-
-
-    def _get_list_len(self, html_dom: HTMLParser) -> int:
-        """
-        Finds exact list length from first page's HTML.
-
-        It works by using a description <meta> element in the HTML header 
-        that follows the form "A list of <number> films compiled on
-        Letterboxd, including <film>..." etc. (The user-made description of the 
-        list comes after this standard-issue desc., after "About this list:").
-        """
-
-        # the first element is the one we want
-        descr_el  = html_dom.css("meta[name='description']")[0]
-        list_desc = descr_el.attributes['content']
-
-        # get first number in the descr. str (which is list length),
-        # using a regex search
-        number_re = re.compile("[0-9,]+")
-        len_match = re.search(number_re, list_desc)         # gets first match
-        list_len  = int(len_match[0].replace(",", ""))      # cast to int for transmission
-
-        return list_len
-
-
-    def _get_urls(self, first_page: HTMLParser):
-        """
-        Fetches all the URLs to films, across all list pages.
-        """
-        # we already have the first page, so start with the URLs there
-        film_urls = [
-            "https://letterboxd.com" + el.attrs['data-target-link'] \
-            for el in first_page.css("div[data-target-link^='/film/']")
-            ]
-
-        if self._num_pages > 1:
-            # now we do the rest, if there is any
-            for current_page in range(2, self._num_pages+1): # exclude the first page, include last
-
-                self._curl.setopt(pycurl.URL, self._url+"page/"+str(current_page)+"/")
-                listpage = self._curl.perform_rs()
-                tree = HTMLParser(listpage)
-
-                film_urls.extend([
-                    "https://letterboxd.com" + el.attrs['data-target-link'] \
-                    for el in tree.css("div[data-target-link^='/film/']")
-                    ])
-
-        return film_urls
-
-
-    def __getitem__(self, idx: int | slice):
-        """
-        This function implements the indexing syntax for the class, 
-        including slicing. 
-        
-        If a slice is used, a deep copy of the original LetterboxdList 
-        object is returned, with its contents being a subset of the original's.
-        Otherwise, the list item is simply returned.
-
-        Note that this list may contain both `str`s (URLs to films) and 
-        `LetterboxdFilm` objects: it starts with only `str`s, but will contain
-        only `LetterboxdFilm` objects if all have been initialized. 
-
-        Any index or key errors will be handled by the containers indexed into.
-        """
-
-        # if the slice is equivalent to an int
-        if isinstance(idx, int):
-            return self._films[idx]
-
-        if isinstance(idx, slice):
-            # since Curl objects don't support deep copying, I need to delete that attribute
-            # before the copy, and recreate it after (for both self and the copy)
-            self._curl         = None
-            subset_list        = copy.deepcopy(self)
-            subset_list._films = subset_list._films[idx]
-
-            self._curl = pycurl.Curl()
-            self._curl.setopt(
-                pycurl.HTTPHEADER,
-                ["User-Agent: Application", "Connection: Keep-Alive"]
-            )
-            subset_list._curl = self._curl
-
-            return subset_list
-
-        raise TypeError("LetterboxdList objects can only be indexed with `int`s or `slice`s.")
-
-
-    def __iter__(self) -> list:
-        """
-        Make the object iterable. Simply returns an iterater to the inner list.
-        """
-        return self._films.__iter__()
-
-    @property
-    def is_ranked(self) -> bool:
-        """
-        Whether the list is ranked or not.
-        """
-        return self._is_ranked
-
-    @property
-    def length(self) -> int:
-        """
-        Total films.
-        """
-        return self._length
-
-    @property
-    def name(self) -> str:
-        """
-        The name of the list.
-        """
-        return self._name
-
-    @property
-    def num_pages(self) -> int:
-        """
-        The number of pages the list takes up on Letterboxd.
-        """
-        return self._num_pages
-
-    @property
-    def url(self) -> str:
-        """
-        The list's URL.
-        """
-        return self._url
-
-
-    def is_initialized(self, n: int) -> bool:
-        """
-        Checks to see if the nth element of the list is initialized
-        as a LetterboxdFilm.
-        """
-        return isinstance(self._films[n], LetterboxdFilm)
-
-
-    def init_film(self, n: int):
-        """
-        Initialize the nth film in the list of URLs (zero-indexed), 
-        and swap the `str` at that position for the initialized 
-        LetterboxdFilm object. 
-
-        If the list item has already been initialized, the function
-        simply returns the already-initialized object.
-        """
-        if isinstance(self._films[n], LetterboxdFilm):
-            return self._films[n]
-
-        lbf = LetterboxdFilm(self._films[n])
-        self._films[n] = lbf
-
-        return lbf
 
 
 
@@ -323,7 +112,7 @@ class LetterboxdFilm:
     Any other film information is accessed through CSS-based searches on the 
     HTML, implemented as methods.
     """
-    def __init__(self, film_url: str):
+    def __init__(self, film_url):
 
         self._url       = film_url
         insert_index    = film_url.find("/film")
@@ -336,7 +125,7 @@ class LetterboxdFilm:
         self._curl.setopt(pycurl.URL, film_url)
 
         resp_str        = self._curl.perform_rs()
-        status_code     = self._curl.getinfo(self._curl.RESPONSE_CODE)
+        status_code     = self._curl.getinfo(pycurl.RESPONSE_CODE)
         handle_http_err(status_code, self._url)
 
         page_html       = HTMLParser(resp_str)
@@ -383,11 +172,16 @@ class LetterboxdFilm:
         obj_copy._stats_url = copy.deepcopy(self._stats_url,  memo)
         obj_copy._title     = copy.deepcopy(self._title,      memo)
         obj_copy._year      = copy.deepcopy(self._year,       memo)
-        obj_copy._html      = HTMLParser(self._html.html)
-        obj_copy._curl      = self._curl
+
+        if not self._html.html:
+            raise Exception("During __getitem__ copy, somehow self._html.html was None.")
+    
+        obj_copy._html = HTMLParser(self._html.html)
+        obj_copy._curl = self._curl
 
         if self._stats_html:
-            obj_copy._stats_html = HTMLParser(self._stats_html.html)
+            if self._stats_html.html:
+                obj_copy._stats_html = HTMLParser(self._stats_html.html)
         else:
             obj_copy._stats_html = None
 
@@ -560,13 +354,23 @@ class LetterboxdFilm:
         """
         Get average rating on Letterboxd.
         """
+        selector = "meta[name='twitter:data2']"
         rating_element = self._html.css("meta[name='twitter:data2']")
+        if not rating_element:
+            raise ChangedLetterboxdDOM(
+                f"Rating is no longer found by CSS selector {selector}."
+            )
 
-        avg_rating = None
-        if len(rating_element) > 0:
-            rating_element_content = rating_element[0].attributes['content']
-            rating_element_title_parsed = rating_element_content.split(" ")
-            avg_rating = float(rating_element_title_parsed[0])
+        el_attr = "content"
+        rating_element_content = rating_element[0].attributes[el_attr]
+        
+        if not rating_element_content:
+            raise ChangedLetterboxdDOM(
+                f"Rating is no longer in the {el_attr} at {selector}."
+            )
+        
+        rating_element_title_parsed = rating_element_content.split(" ")
+        avg_rating = float(rating_element_title_parsed[0])
 
         return float(avg_rating)
 
@@ -589,18 +393,26 @@ class LetterboxdFilm:
                 continue
 
             # double-quotes are reserved for the CSV formatting
-            casting[node.text().replace("\"", "'")] = node.attributes['title'].replace("\"", "'")
+            acting_role = node.attributes['title']
+            if not acting_role:
+                raise ChangedLetterboxdDOM(f"DOM changed for casting.")
+            
+            casting[node.text().replace("\"", "'")] = acting_role.replace("\"", "'")
 
         return casting
 
 
     # Statistics section
 
-    def _get_stats_html(self):
+    def _get_stats_html(self) -> HTMLParser:
         self._curl.setopt(pycurl.URL, self._stats_url)
         stats_response   = self._curl.perform_rs()
+        status_code      = self._curl.getinfo(pycurl.RESPONSE_CODE)
+        handle_http_err(status_code, self._stats_url)
+
         stats_html       = HTMLParser(stats_response)
-        self._stats_html = stats_html
+        
+        return stats_html
 
 
     def get_watches(self) -> int:
@@ -608,9 +420,27 @@ class LetterboxdFilm:
         Return the amount of watches the film has on Letterboxd.
         """
         if not self._stats_html:
-            self._get_stats_html()
+            self._stats_html = self._get_stats_html()
+  
+        selector = "div.production-statistic.-watches"
 
-        watches_msg = self._stats_html.css("div.production-statistic.-watches")[0].attrs['aria-label']
+        try:
+            watches_msg_node = self._stats_html.css(selector)[0]
+        except IndexError as idx_err:
+            stats_html_msg = f"-- STATS HTML --{self._stats_html.html}" if self._stats_html else "(no stats html)"
+            
+            err_msg = "\n\n".join([
+                f"Watches are not found at CSS selector {selector}",
+                f"-- FILM TITLE on failure --: {self.title}",
+                stats_html_msg
+            ])
+            raise ChangedLetterboxdDOM(err_msg) from idx_err
+        
+        el_attr     = 'aria-label'
+        watches_msg = watches_msg_node.attrs[el_attr]
+        if not watches_msg:
+            raise ChangedLetterboxdDOM(f"Watches not in {el_attr} attribute.")
+
         watches_msg = watches_msg[11:]                       # take out the "Watched by"
         watches_msg = watches_msg[:-8]                       # take out the " members"
         view_count  = watches_msg.replace(",", "")           # take out commas
@@ -622,11 +452,289 @@ class LetterboxdFilm:
         Return the amount of likes the film has on Letterboxd.
         """
         if not self._stats_html:
-            self._get_stats_html()
+            self._stats_html = self._get_stats_html()
 
-        likes_msg = self._stats_html.css("div.production-statistic.-likes")[0].attrs['aria-label']
+        selector = "div.-likes > a"
+        try:
+            likes_msg_node = self._stats_html.css(selector)[0]
+        except IndexError as idx_err:
+            stats_html_msg = f"-- STATS HTML --{self._stats_html.html}" if self._stats_html else "(no stats html)"
+            
+            err_msg = "\n\n".join([
+                f"Likes are not found at CSS selector {selector}",
+                f"-- FILM TITLE on failure --: {self.title}",
+                stats_html_msg
+            ])
+            raise ChangedLetterboxdDOM(err_msg) from idx_err
+        
+        el_attr = "title"
+        likes_msg = likes_msg_node.attrs[el_attr]
+        if not likes_msg:
+            raise ChangedLetterboxdDOM(f"Likes not found in {el_attr} attribute")
+        
         likes_msg = likes_msg[9:]                          # take out the "Liked by"
         likes_msg = likes_msg[:-8]                         # take out the " members"
         likes_count = likes_msg.replace(",", "")           # take out commas
 
         return int(likes_count)
+
+
+
+
+class LetterboxdList:
+    """
+    Composition of `LetterboxdFilm`s, each of which are lazily initialized.
+    Until they are, they exist as a `list` of URL strings. When needed,
+    they are evaluated on-demand with the `.init_film(n)` function, which 
+    initialized the nth film, and replaces its URL string in the list with
+    a `LetterboxdFilm` object initialized with that URL.
+
+    The inner `list` is accesible via indexing both with `int`s, and slices.
+    Since it is intended to correspond to a static webpage, it is a read-only 
+    attribute. The object can also be iterated over like a list. In short, 
+    a `LetterboxdList` can be treated like a standard `list`! Just without 
+    element re-assignment, of course.
+
+    Note: ranking information is not kept, since it will always map one-to-one
+    to the index of the film in the list, and the list is not designed to be
+    modified. The `is_ranked` boolean allows the user to check and implement
+    display of list rank as they see fit. 
+    """
+    def __init__(self, url: str, sub_init=False, max_length=-1):
+        """
+        Initialize a `LetterboxdList` object.
+            `url`: the URL to the list.
+            `sub_init`: Initialize all URLs in the list into `LetterboxdFilm` 
+            objects. Warning: this is time-intestive, since each initialization 
+            depends on at least 1 HTTP request. Default: `False`.
+            `max_length`: Raise `ListTooLongError` error if list length exceeds
+            this value. Default: -1 (meaning "no limit").
+        """
+        self._url       = url
+        self._curl      = pycurl.Curl()
+        self._curl.setopt(pycurl.URL, self._url)
+        self._curl.setopt(
+            pycurl.HTTPHEADER,
+            ["User-Agent: Application", "Connection: Keep-Alive"]
+        )
+
+        first_page_html = HTMLParser(self._curl.perform_rs())
+        resp_code       = self._curl.getinfo(pycurl.HTTP_CODE)
+        handle_http_err(resp_code, self._url)
+
+        self._name      = first_page_html.css(".title-1")[0].text()
+        self._length    = self._get_list_len(first_page_html)
+
+        if max_length > 0 and max_length < self._length:
+            raise ListTooLongError(
+                f"The list {self._name} at {self._url} "
+                "is over the max. specified length when this object"
+                f"was initialized (max_length={max_length}). "
+                "To remove any limits, set max_length=-1 at initialization."
+                )
+
+        page_num_nodes  = first_page_html.css("li.paginate-page > a")
+        self._num_pages = int(page_num_nodes[-1].text()) if len(page_num_nodes) > 0 else 1
+        self._is_ranked = bool(first_page_html.css("p.list-number"))
+
+        self._films     = self._get_urls(first_page_html)
+
+        if sub_init:
+            for n in range(self._length):
+                self.init_film(n)
+
+
+    def _get_list_len(self, html_dom: HTMLParser) -> int:
+        """
+        Finds exact list length from first page's HTML.
+
+        It works by using a description <meta> element in the HTML header 
+        that follows the form "A list of <number> films compiled on
+        Letterboxd, including <film>..." etc. (The user-made description of the 
+        list comes after this standard-issue desc., after "About this list:").
+        """
+
+        # the first element is the one we want
+        selector  = "meta[name='description']"
+        descr_el  = html_dom.css(selector)[0]
+        list_desc = descr_el.attributes['content']
+        if not list_desc:
+            raise ChangedLetterboxdDOM(
+                f"Letterboxd list descriptions are no longer found by CSS selector {selector}."
+            )
+
+        # get first number in the descr. str (which is list length),
+        # using a regex search
+        number_re = re.compile("[0-9,]+")
+        len_match = re.search(number_re, list_desc)         # gets first match
+
+        if not len_match:
+            raise ChangedLetterboxdDOM(
+                "Letterboxd list descriptions have changed content. "
+                f"The one at hand reads: '{list_desc}' (for list {self.name})"
+            )
+        
+        list_len  = int(len_match[0].replace(",", ""))      # cast to int for transmission
+
+        return list_len
+
+
+    def _get_urls(self, first_page: HTMLParser) -> list[str | LetterboxdFilm]:
+        """
+        Fetches all the URLs to films, across all list pages.
+        """
+        
+        # we already have the first page, so start with the URLs there
+        film_urls = []
+        selector = "div[data-target-link^='/film/']"
+        el_attr  = "data-target-link"
+        for el in first_page.css("div[data-target-link^='/film/']"):
+            
+            target_link = el.attrs[el_attr]
+
+            if not target_link:
+                raise ChangedLetterboxdDOM(
+                    "Letterboxd film URLs are no longer in the element "
+                    f"found by CSS selector {selector}, or in the {el_attr} attribute."
+                    )
+            
+            film_urls.append("https://letterboxd.com" + target_link)
+
+        
+        if self._num_pages > 1:
+            # now we do the rest, if there is any
+            for current_page in range(2, self._num_pages+1): # exclude the first page, include last
+                if not self._curl:
+                    raise Exception("__getitem__ copy failed to replace Curl object")
+                
+                self._curl.setopt(pycurl.URL, self._url+"page/"+str(current_page)+"/")
+                listpage = self._curl.perform_rs()
+                tree = HTMLParser(listpage)
+
+                for el in tree.css(selector):
+                    
+                    target_link = el.attrs[el_attr]
+
+                    if not target_link:
+                        raise ChangedLetterboxdDOM(
+                            "Letterboxd film URLs are no longer in the element "
+                            f"found by CSS selector {selector}, or in the {el_attr} attribute."
+                            )
+                    
+                    film_urls.append("https://letterboxd.com" + target_link)
+
+        return film_urls
+
+
+    def __getitem__(self, idx: int | slice):
+        """
+        This function implements the indexing syntax for the class, 
+        including slicing. 
+        
+        If a slice is used, a deep copy of the original LetterboxdList 
+        object is returned, with its contents being a subset of the original's.
+        Otherwise, the list item is simply returned.
+
+        Note that this list may contain both `str`s (URLs to films) and 
+        `LetterboxdFilm` objects: it starts with only `str`s, but will contain
+        only `LetterboxdFilm` objects if all have been initialized. 
+
+        Any index or key errors will be handled by the containers indexed into.
+        """
+
+        # if the slice is equivalent to an int
+        if isinstance(idx, int):
+            return self._films[idx]
+
+        if isinstance(idx, slice):
+            # since Curl objects don't support deep copying, I need to delete that attribute
+            # before the copy, and recreate it after (for both self and the copy)
+            self._curl         = None
+            subset_list        = copy.deepcopy(self)
+            subset_list._films = subset_list._films[idx]
+
+            self._curl = pycurl.Curl()
+            self._curl.setopt(
+                pycurl.HTTPHEADER,
+                ["User-Agent: Application", "Connection: Keep-Alive"]
+            )
+            subset_list._curl = self._curl
+
+            return subset_list
+
+        raise TypeError("LetterboxdList objects can only be indexed with `int`s or `slice`s.")
+
+
+    def __iter__(self) -> Iterator[str | LetterboxdFilm]:
+        """
+        Make the object iterable. Simply returns an iterater to the inner list.
+        """
+        return self._films.__iter__()
+    
+
+    def __next__(self) -> str | LetterboxdFilm:
+        return self._films.__iter__().__next__()
+
+
+    @property
+    def is_ranked(self) -> bool:
+        """
+        Whether the list is ranked or not.
+        """
+        return self._is_ranked
+
+    @property
+    def length(self) -> int:
+        """
+        Total films.
+        """
+        return self._length
+
+    @property
+    def name(self) -> str:
+        """
+        The name of the list.
+        """
+        return self._name
+
+    @property
+    def num_pages(self) -> int:
+        """
+        The number of pages the list takes up on Letterboxd.
+        """
+        return self._num_pages
+
+    @property
+    def url(self) -> str:
+        """
+        The list's URL.
+        """
+        return self._url
+
+
+    def is_initialized(self, n: int) -> bool:
+        """
+        Checks to see if the nth element of the list is initialized
+        as a LetterboxdFilm.
+        """
+        return isinstance(self._films[n], LetterboxdFilm)
+
+
+    def init_film(self, n: int):
+        """
+        Initialize the nth film in the list of URLs (zero-indexed), 
+        and swap the `str` at that position for the initialized 
+        LetterboxdFilm object. 
+
+        If the list item has already been initialized, the function
+        simply returns the already-initialized object.
+        """
+        if isinstance(self._films[n], LetterboxdFilm):
+            return self._films[n]
+
+        lbf = self._films[n]
+        if isinstance(lbf, str):
+            lbf = LetterboxdFilm(lbf)
+            self._films[n] = lbf
+
+        return lbf

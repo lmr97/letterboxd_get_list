@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "letterboxd_list"
-version = "1.6.1"
+version = "1.6.2"
 authors = [
     { name = "Martin Reid", email = "lmreid1997@gmail.com" },
 ]
