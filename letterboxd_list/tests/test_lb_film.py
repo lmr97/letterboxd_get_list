@@ -147,8 +147,8 @@ def test_csv_attrs():
         TEST_FILM.get_attrs_csv("bingus")
 
     # cover the stat branches in the function, with margins of error
-    assert int(TEST_FILM.get_attrs_csv(["watches"])) - 447000 < 10000
-    assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 177000 < 1000
+    assert int(TEST_FILM.get_attrs_csv(["watches"])) - 459_000 < 10_000
+    assert int(TEST_FILM.get_attrs_csv(["likes"]))   - 182_000 <  1_000
 
     rand_list_no_stats = RAND_LIST_DF.drop(["Watches", "Likes", "Avg Rating"], axis=1)
     rlns_cols          = rand_list_no_stats.columns
