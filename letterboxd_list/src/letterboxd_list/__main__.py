@@ -205,43 +205,61 @@ def main():
     if cli_args['debug']:
         print("\033[0;33m  /// Running in debug mode /// \033[0m")
         try:
+            if os.path.isdir(cli_args['output_file']):
+                raise IsADirectoryError(21, 'Is a directory')
+
             get_list_with_attrs(cli_args['list_url'],    # sends first argument as a list
                                 cli_args['attributes'],
                                 cli_args['output_file'])
             print("\n\n\033[0;32mRetrival complete!\033[0m\n")
         except lbc.RequestError as rqe:
-            print(f"There is an issue with the input of your request: {repr(rqe)}", file=sys.stderr)
+            print(f"ERROR: There is an issue with the input of your request: {repr(rqe)}", file=sys.stderr)
         except lbc.HTTPError as hpe:
-            print(f"Network issue during runtime: {repr(hpe)}", file=sys.stderr)
+            print(f"ERROR: Network issue during runtime: {repr(hpe)}", file=sys.stderr)
         except IsADirectoryError as iade:
-            print("The output file you've given is actually a directory within the current ",
-            f"working directory. Try again with another name!\nFull error: {repr(iade)}", 
-            file=sys.stderr)
+            print(
+                "ERROR: The output file you've given is actually a directory within the current ",
+                f"working directory. Try again with another name.\nFull error: {repr(iade)}", 
+                file=sys.stderr
+            )
         except PermissionError as pe:
-            print("It looks like you don't have permission to access the output file you want to ",
-            "write to. If you're on Windows, your OS may have raised this error because the ",
-            "output filename you chose is the name of a directory in the current working ",
-            f"directory.\nFull error: {repr(pe)}", file=sys.stderr)
+            print(
+                "ERROR: It looks like you don't have permission to access the output file you want to ",
+                "write to. If you're on Windows, your OS may have raised this error because the ",
+                "output filename you chose is the name of a directory in the current working ",
+                f"directory.\nFull error: {repr(pe)}", file=sys.stderr
+            )
     else:
         try:
+            if os.path.isdir(cli_args['output_file']):
+                raise IsADirectoryError(21, 'Is a directory')
+            
             get_list_with_attrs(cli_args['list_url'],    # sends first argument as a list
                                 cli_args['attributes'],
                                 cli_args['output_file'])
             print("\n\n\033[0;32mRetrival complete!\033[0m\n")
         except lbc.RequestError as rqe:
-            print(f"There is an issue with the input of your request: {repr(rqe)}", file=sys.stderr)
+            print(f"ERROR: There is an issue with the input of your request: {repr(rqe)}", file=sys.stderr)
         except lbc.HTTPError as hpe:
             print(f"Network issue during runtime: {repr(hpe)}", file=sys.stderr)
         except IsADirectoryError as iade:
-            print("The output file you've given is actually a directory within the current ",
-            f"working directory. Try another name!\nFull error: {repr(iade)}", file=sys.stderr)
+            print(
+                "ERROR: The output file you've given is actually a directory within the current",
+                f"working directory. Try another name.\nFull error: {repr(iade)}", 
+                file=sys.stderr
+            )
         except PermissionError as pe:
-            print("It looks like you don't have permission to access the output file you want to ",
-            "write to. If you're on Windows, your OS may have raised this error because the ",
-            "output filename you chose is the name of a directory in the current working ",
-            f"directory.\nFull error: {repr(pe)}", file=sys.stderr)
+            print(
+                "ERROR: It looks like you don't have permission to access the output file you want to ",
+                "write to. If you're on Windows, your OS may have raised this error because the ",
+                "output filename you chose is the name of a directory in the current working ",
+                f"directory.\nFull error: {repr(pe)}", 
+                file=sys.stderr
+            )
         except Exception as e:
             print(f"Runtime error: {repr(e)}", file=sys.stderr)
-            print("If you're seeing this, please re-run the command you just ran ",
+            print(
+                "If you're seeing this, please re-run the command you just ran ",
                 "with the `--debug` flag, and submit an issue on GitHub with the debug output.", 
-                file=sys.stderr)
+                file=sys.stderr
+            )
