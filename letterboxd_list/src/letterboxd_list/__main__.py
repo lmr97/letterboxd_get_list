@@ -199,6 +199,15 @@ def main():
     """
     The main function.
     """
+    print(f"/// ERROR: This utility will no longer funtion. ///", file=sys.stderr) 
+    print("\tThis is due to Letterboxd requiring JavaScript capabilities to get "
+          "site data (without API access), which this Curl-based progam cannot "
+          "provide. Further, the author of this program respects their effort "
+          "to reduce bot traffic on Letterboxd. So this project has been "
+          "discontinued.", file=sys.stderr)
+    
+    sys.exit(1)
+
     cli_args = parse_cli_args()
 
     # a fairly rudimental "debug mode", I know

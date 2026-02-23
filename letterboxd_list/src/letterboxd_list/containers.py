@@ -120,8 +120,10 @@ class LetterboxdFilm:
         self._stats_url = stats_url
 
         self._curl      = pycurl.Curl()
-        self._curl.setopt(pycurl.HTTPHEADER, ["User-Agent: Application"])
 
+        # Referrer needs to be set, since Letterboxd (using Cloudflare) checks it
+        self._curl.setopt(pycurl.HTTPHEADER, ["User-Agent: Application", f"Referrer: {film_url}"])
+        self._curl.setopt(pycurl.FOLLOWLOCATION, True)  # since Referrer is set, follow redirects
         self._curl.setopt(pycurl.URL, film_url)
 
         resp_str        = self._curl.perform_rs()
